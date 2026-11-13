@@ -1,64 +1,136 @@
-<h1><img alt="Baileys logo" src="https://raw.githubusercontent.com/WhiskeySockets/Baileys/refs/heads/master/Media/logo.png" height="75"/></h1>
+<h1 align="center">
+  <img alt="RedxBaileys logo" src="https://raw.githubusercontent.com/WhiskeySockets/Baileys/refs/heads/master/Media/logo.png" height="75"/>
+</h1>
 
+<div align="center">
 
-> [!CAUTION]
-> NOTICE OF BREAKING CHANGE.
->
-> As of 7.0.0, multiple breaking changes were introduced into the library.
->
-> Please check out https://whiskey.so/migrate-latest for more information.
+# RedxBaileys — v7.0.0-rc15
 
-Baileys is a WebSockets-based TypeScript library for interacting with the WhatsApp Web API.
+**Fork of [@WhiskeySockets/Baileys](https://github.com/WhiskeySockets/Baileys) — patched for WhatsApp November 2026 compatibility.**
 
-Join the WhiskeySockets community via the link: https://whiskey.so/discord
+Maintained by **Abdul Rehman Rajpoot**
 
-# Usage & Guide
+</div>
 
-> [!IMPORTANT]
-> The new guide is a work in progress. Expect missing pages/content. [Report missing or incorrect content.](https://github.com/WhiskeySockets/baileys.wiki-site/issues/new)
->
-> **You can still access the old guide here:** [README.md](https://github.com/WhiskeySockets/Baileys/tree/master/README.md), or the [NPM homepage](https://npmjs.com/package/baileys).
+---
 
-The new guide is posted at https://baileys.wiki .
+## What is RedxBaileys?
 
-# Get Support
+RedxBaileys is a patched fork of the Baileys WebSocket library for WhatsApp Web.  
+It fixes all breaking issues introduced by WhatsApp's **November 2026** protocol update, so your bots and automations keep working without modification.
 
-If you'd like business to enterprise-level support from Rajeh, the current maintainer of Baileys, you can book a video chat. Book a 1 hour time slot by contacting him on Discord or pre-ordering [here](https://purpshell.dev/book). The earlier you pre-order the better, as his time slots usually fill up very quickly. He offers immense value per hour and will answer all your questions before the time runs out.
+---
 
-If you are a business, we encourage you to contribute back to the high development costs of the project and to feed the maintainers who dump tens of hours a week on this. You can do so by booking meetings or sponsoring below. All support, even in bona fide / contribution hours, is welcome by businesses of all sizes. This is not condoning or endorsing businesses to use the library. See the Disclaimer below.
+## ✅ Fixes in v7.0.0-rc15
 
-# Sponsor
+### 1. `Platform.WEB` → `Platform.MACOS` (Critical)
+**File:** `src/Utils/validate-connection.ts`
 
-If you'd like to financially support this project, you can do so by supporting the current maintainer [here](https://purpshell.dev/sponsor).
+WhatsApp's November 2026 update began rejecting connections that identify as `Platform.WEB`. Non-Android companions now must use `Platform.MACOS`.
 
-# Disclaimer
-> [!CAUTION]
-> This project is not affiliated, associated, authorized, endorsed by, or in any way officially connected with WhatsApp or any of its subsidiaries or its affiliates.
-> The official WhatsApp website can be found at whatsapp.com. "WhatsApp" as well as related names, marks, emblems and images are registered trademarks of their respective owners.
->
-> The maintainers of Baileys do not in any way condone the use of this application in practices that violate the Terms of Service of WhatsApp. The maintainers of this application call upon the personal responsibility of its users to use this application in a fair way, as it is intended to be used.
-> Use at your own discretion. Do not spam people with this. We discourage any stalkerware, bulk or automated messaging usage.
+- `platform` field: `WEB` → `MACOS`
+- `osVersion`: `'0.1'` → `'14.4.1'` (realistic macOS version)
+- `device`: `'Desktop'` → `'Mac'`
+- `osBuildNumber`: `'0.1'` → `'23E224'` (realistic macOS build)
 
-# License
-Copyright (c) 2026 Rajeh Taher/WhiskeySockets
+---
 
-Licensed under the MIT License:
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+### 2. Default Browser Changed to `androidPhone` (View-Once Fix)
+**File:** `src/Defaults/index.ts`
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+Default browser changed from `Browsers.macOS('Chrome')` to `Browsers.androidPhone('Chrome')`.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+WhatsApp only fanouts view-once messages to Android companions. Using `androidPhone` as default means view-once messages are received properly out of the box — no config needed.
 
-Thus, the maintainers of the project can't be held liable for any potential misuse of this project.
+---
+
+### 3. New `Browsers.androidPhone` Added
+**File:** `src/Utils/browser-utils.ts`  
+**File:** `src/Types/index.ts`
+
+Added a new `androidPhone` browser variant:
+```ts
+Browsers.androidPhone('Chrome') // → ['Chrome', 'Android', '15']
+```
+Registers as Android 15 companion. Use this explicitly if you override the browser config and still need view-once support.
+
+---
+
+### 4. `view_once_unavailable_fanout` Handled Gracefully
+**File:** `src/Socket/messages-recv.ts`
+
+Previously, `view_once_unavailable_fanout` messages were silently dropped with no event emitted. Now:
+- A stub message is emitted with `messageStubParameters` containing `'view_once_unavailable'`
+- Your app can display a "View once: unavailable" placeholder to the user
+- Message is properly ACK'd to WhatsApp
+
+---
+
+### 5. `fetchLatestBaileysVersion` Now Uses Live WA Version
+**File:** `src/Utils/generics.ts`
+
+`fetchLatestBaileysVersion` previously fetched from GitHub (slow, often stale by days).  
+Now delegates directly to `fetchLatestWaWebVersion`, which queries the live WhatsApp Web service worker (`sw.js`) for the real current version.
+
+- Faster connection startup
+- Always gets the actual current WA version
+- Chrome user-agent updated to **136** to bypass WA anti-bot detection
+
+---
+
+### 6. Package Name Fixed for npm GitHub Install
+**File:** `package.json`
+
+Package name set to `@whiskeysockets/baileys` so existing bots that `require('@whiskeysockets/baileys')` work without changing any import statements.
+
+---
+
+## Install
+
+### From GitHub (recommended)
+```bash
+npm install github:AbdulRehman19721986/RedxBaileys
+```
+
+No import changes needed — drop-in replacement for `@whiskeysockets/baileys`.
+
+### In your `package.json`
+```json
+"@whiskeysockets/baileys": "github:AbdulRehman19721986/RedxBaileys"
+```
+
+---
+
+## Quick Start
+
+```ts
+import makeWASocket, { Browsers, useMultiFileAuthState } from '@whiskeysockets/baileys'
+
+const { state, saveCreds } = await useMultiFileAuthState('auth')
+
+const sock = makeWASocket({
+    auth: state,
+    // androidPhone is the default — view-once works out of the box
+    // override only if needed:
+    // browser: Browsers.androidPhone('Chrome')
+})
+
+sock.ev.on('creds.update', saveCreds)
+```
+
+---
+
+## Disclaimer
+
+This project is not affiliated with, associated with, authorized by, or endorsed by WhatsApp or Meta.  
+"WhatsApp" and related marks are registered trademarks of their respective owners.  
+Use responsibly and in accordance with WhatsApp's Terms of Service.
+
+---
+
+<div align="center">
+
+**RedxBaileys v7.0.0-rc15** — Maintained by Abdul Rehman Rajpoot  
+Based on [WhiskeySockets/Baileys](https://github.com/WhiskeySockets/Baileys)
+
+</div>
