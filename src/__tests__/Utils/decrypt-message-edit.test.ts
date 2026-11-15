@@ -1,4 +1,4 @@
-import { createCipheriv, hkdfSync } from 'node:crypto'
+import { createCipheriv, createHmac, hkdfSync } from 'node:crypto'
 import P from 'pino'
 import { proto } from '../../../WAProto/index.js'
 import type { WAMessage } from '../../Types'
@@ -9,10 +9,8 @@ import { processMessage } from '../../Utils/process-message'
 import { jidNormalizedUser } from '../../WABinary'
 
 
-const createHmacKey = (data: Uint8Array, key: Uint8Array = Buffer.alloc(32)): Buffer => {
-	const { createHmac } = require('node:crypto') as typeof import('node:crypto')
-	return createHmac('sha256', key).update(data).digest()
-}
+const createHmacKey = (data: Uint8Array, key: Uint8Array = Buffer.alloc(32)): Buffer =>
+	createHmac('sha256', key).update(data).digest()
 
 const secret = Buffer.alloc(32, 7)
 const iv = Buffer.alloc(12, 8)
