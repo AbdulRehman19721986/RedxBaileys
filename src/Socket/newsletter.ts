@@ -6,21 +6,29 @@ import { getBinaryNodeChild } from '../WABinary'
 import { makeGroupsSocket } from './groups'
 import { executeWMexQuery as genericExecuteWMexQuery } from './mex'
 
-/** Accept either a bare invite code or a full WhatsApp channel URL. */
+/** Accept a bare invite code or a WhatsApp channel/post permalink. */
 const extractNewsletterInviteCode = (value: string): string => {
-	const trimmed = value.trim()
+	const trimmed = String(value || '').trim()
 	if (!trimmed) {
 		throw new Error('Newsletter invite code or channel URL is required')
 	}
 
+	// URL() needs a scheme. Keep bare invite codes untouched, while allowing
+	// whatsapp.com/channel/<code>/<post-id>?... links used by channel shares.
+	const candidate = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`
 	try {
-		const url = new URL(trimmed)
-		if (url.hostname === 'whatsapp.com' || url.hostname === 'www.whatsapp.com') {
-			const match = url.pathname.match(/^\/channel\/([^/]+)\/?$/)
+		const url = new URL(candidate)
+		const host = url.hostname.toLowerCase().replace(/^www\./, '')
+		if (host === 'whatsapp.com' || host === 'm.whatsapp.com') {
+			const match = url.pathname.match(/^\/channel\/([^/]+)(?:\/[^/]+)?\/?$/i)
 			if (match?.[1]) return decodeURIComponent(match[1])
+			throw new Error('Invalid WhatsApp Channel invite link')
 		}
-	} catch {
+	} catch (error) {
 		// A bare invite code is expected and should pass through unchanged.
+		if (/^https?:\/\//i.test(trimmed) || trimmed.includes('whatsapp.com/')) {
+			throw error
+		}
 	}
 
 	return trimmed
