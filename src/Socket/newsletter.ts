@@ -125,9 +125,10 @@ export const makeNewsletterSocket = (config: SocketConfig) => {
 
 	const newsletterJidFromInvite = async (inviteOrUrl: string): Promise<string> => {
 		const metadata = await newsletterMetadata('invite', inviteOrUrl)
-		if (!metadata?.id || !metadata.id.endsWith('@newsletter')) {
+		if (!metadata?.id?.endsWith('@newsletter')) {
 			throw new Error('Unable to resolve WhatsApp Channel JID from the supplied invite link')
 		}
+
 		return metadata.id
 	}
 
