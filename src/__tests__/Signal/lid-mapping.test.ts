@@ -44,4 +44,36 @@ describe('LIDMappingStore', () => {
 			expect(result).toBeNull()
 		})
 	})
+	describe('storeLIDPNMappings', () => {
+		it('returns only newly stored mappings and makes repeated mappings a no-op', async () => {
+			mockKeys.get.mockResolvedValue({} as never)
+			const pair = { lid: '111@lid', pn: '222@s.whatsapp.net' }
+			const first = await lidMappingStore.storeLIDPNMappings([pair])
+			const second = await lidMappingStore.storeLIDPNMappings([pair])
+			expect(first).toEqual([{ pnUser: '222', lidUser: '111' }])
+			expect(second).toEqual([])
+			expect(mockKeys.set).toHaveBeenCalledTimes(1)
+		})
+
+		it('reports a concurrent new mapping only once', async () => {
+			const db: Record<string, string> = {}
+			const set = jest.fn(async (data: { 'lid-mapping'?: Record<string, string> }) => {
+				Object.assign(db, data['lid-mapping'] || {})
+			})
+			const keys = {
+				get: async (_type: string, ids: string[]) => {
+					await new Promise(resolve => setTimeout(resolve, 5))
+					return Object.fromEntries(ids.filter(id => id in db).map(id => [id, db[id]]))
+				},
+				set,
+				transaction: async (work: () => Promise<unknown>) => work(),
+				isInTransaction: () => false
+			} as unknown as SignalKeyStoreWithTransaction
+			const store = new LIDMappingStore(keys, logger)
+			const pair = { lid: '333@lid', pn: '444@s.whatsapp.net' }
+			const [first, second] = await Promise.all([store.storeLIDPNMappings([pair]), store.storeLIDPNMappings([pair])])
+			expect([...first, ...second]).toEqual([{ pnUser: '444', lidUser: '333' }])
+			expect(set).toHaveBeenCalledTimes(1)
+		})
+	})
 })
