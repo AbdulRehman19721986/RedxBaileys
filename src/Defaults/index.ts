@@ -53,9 +53,9 @@ export const PROCESSABLE_HISTORY_TYPES = [
 
 export const DEFAULT_CACHE_TTLS = {
 	SIGNAL_STORE: 15 * 60, // was 5 min → 15 min: fewer re-fetches on busy bots
-	MSG_RETRY: 60 * 60,    // 1 hour (unchanged)
-	CALL_OFFER: 5 * 60,    // 5 minutes (unchanged)
-	USER_DEVICES: 15 * 60  // was 5 min → 15 min: device list cached longer = faster sends
+	MSG_RETRY: 60 * 60, // 1 hour (unchanged)
+	CALL_OFFER: 5 * 60, // 5 minutes (unchanged)
+	USER_DEVICES: 15 * 60 // was 5 min → 15 min: device list cached longer = faster sends
 }
 
 export const DEFAULT_CONNECTION_CONFIG: SocketConfig = {
@@ -63,25 +63,22 @@ export const DEFAULT_CONNECTION_CONFIG: SocketConfig = {
 	browser: Browsers.androidPhone('Chrome'),
 	waWebSocketUrl: 'wss://web.whatsapp.com/ws/chat',
 	// REDX TUNING: faster connect detection, shorter keepalive for bot responsiveness
-	connectTimeoutMs: 15_000,       // was 20_000 — detect stalls faster
-	keepAliveIntervalMs: 20_000,    // was 30_000 — ping more often, catch dead sockets sooner
+	connectTimeoutMs: 15_000, // was 20_000 — detect stalls faster
+	keepAliveIntervalMs: 20_000, // was 30_000 — ping more often, catch dead sockets sooner
 	logger: logger.child({ class: 'baileys' }),
 	emitOwnEvents: true,
-	defaultQueryTimeoutMs: 30_000,  // was 60_000 — WMex queries (newsletter, group) rarely need >30s
+	defaultQueryTimeoutMs: 30_000, // was 60_000 — WMex queries (newsletter, group) rarely need >30s
 	customUploadHosts: [],
-	retryRequestDelayMs: 150,       // was 250 — faster message retry
+	retryRequestDelayMs: 150, // was 250 — faster message retry
 	maxMsgRetryCount: 5,
 	fireInitQueries: true,
 	auth: undefined as unknown as AuthenticationState,
 	markOnlineOnConnect: true,
-	syncFullHistory: false,         // was true — bots don't need full history; saves RAM + startup time
+	syncFullHistory: false, // was true — bots don't need full history; saves RAM + startup time
 	patchMessageBeforeSending: msg => msg,
 	shouldSyncHistoryMessage: ({ syncType }: proto.Message.IHistorySyncNotification) => {
 		// Only sync recent + push_name; skip FULL and INITIAL_BOOTSTRAP for speed
-		return (
-			syncType === proto.HistorySync.HistorySyncType.RECENT ||
-			syncType === proto.HistorySync.HistorySyncType.PUSH_NAME
-		)
+		return syncType === proto.HistorySync.HistorySyncType.RECENT || syncType === proto.HistorySync.HistorySyncType.PUSH_NAME
 	},
 	shouldIgnoreJid: () => false,
 	linkPreviewImageThumbnailWidth: 192,
