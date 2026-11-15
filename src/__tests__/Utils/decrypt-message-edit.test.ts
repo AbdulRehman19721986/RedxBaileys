@@ -157,6 +157,77 @@ describe('encrypted WhatsApp MESSAGE_EDIT', () => {
 		expect(decoded.fullMessage.message?.messageContextInfo?.deviceListMetadataVersion).toBe(2)
 	})
 
+	it('preserves the actual external editor when a group member edits a message sent by this bot (including LID addressing)', async () => {
+		const meId = '999999999@s.whatsapp.net'
+		const editorLid = '123450099@lid'
+		const editorPn = '123450099@s.whatsapp.net'
+		const editorUser = jidNormalizedUser(editorPn)
+		const originalSenderJid = jidNormalizedUser(meId)
+		const editText = 'Member edited a bot-authored group message'
+		const editPlaintext = proto.Message.encode({
+			protocolMessage: {
+				type: proto.Message.ProtocolMessage.Type.MESSAGE_EDIT,
+				key: { id: originalId, fromMe: true },
+				editedMessage: { conversation: editText },
+				timestampMs: 1700000002000
+			}
+		}).finish()
+		const info = Buffer.concat([
+			Buffer.from(originalId),
+			Buffer.from(originalSenderJid),
+			Buffer.from(editorUser),
+			Buffer.from('Message Edit'),
+			new Uint8Array([1])
+		])
+		const derived = createHmacKey(info, createHmacKey(secret))
+		const editCipher = createCipheriv('aes-256-gcm', derived, iv)
+		const payload = Buffer.concat([editCipher.update(editPlaintext), editCipher.final(), editCipher.getAuthTag()])
+		const envelope: WAMessage = {
+			key: {
+				remoteJid: groupJid,
+				fromMe: false,
+				id: 'external-editor-envelope',
+				participant: editorLid,
+				participantAlt: editorPn
+			},
+			message: {
+				secretEncryptedMessage: {
+					secretEncType: proto.Message.SecretEncryptedMessage.SecretEncType.MESSAGE_EDIT,
+					targetMessageKey: { remoteJid: groupJid, fromMe: true, id: originalId },
+					encIv: iv,
+					encPayload: payload
+				}
+			},
+			messageTimestamp: 1700000002,
+			pushName: 'External Group Editor'
+		}
+		const events: Array<{ name: string; payload: unknown }> = []
+		const context = {
+			shouldProcessHistoryMsg: false,
+			creds: { me: { id: meId, lid: '999999999@lid' } },
+			keyStore: {},
+			ev: { emit: (name: string, value: unknown) => { events.push({ name, payload: value }); return true } },
+			options: {},
+			signalRepository: {},
+			getMessage: async () => ({
+				messageContextInfo: { messageSecret: secret },
+				conversation: 'Original bot-authored message'
+			})
+		} as unknown as Parameters<typeof processMessage>[1]
+
+		await processMessage(envelope, context)
+		const update = events.find(event => event.name === 'messages.update')?.payload as Array<{
+			key: WAMessage['key']
+			update: { message?: proto.IMessage }
+		}>
+		expect(update).toHaveLength(1)
+		expect(update[0]!.key.fromMe).toBe(true) // target message was authored by this bot
+		expect(update[0]!.key.editActorFromMe).toBe(false) // but the editor was another group member
+		expect(update[0]!.key.editActorJid).toBe(editorUser)
+		expect(update[0]!.key.editActorPushName).toBe('External Group Editor')
+		expect(update[0]!.update.message?.editedMessage?.message?.conversation).toBe(editText)
+	})
+
 	it('decrypts an edit made by a different group participant than the original sender', async () => {
 		const editor = '123450099:7@s.whatsapp.net'
 		const originalSender = editorPn
