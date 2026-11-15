@@ -1,8 +1,8 @@
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import type { BaileysEventEmitter, WAMessage } from '../../Types'
 import { makeInMemoryStore } from '../../Store/make-in-memory-store'
+import type { BaileysEventEmitter, WAMessage } from '../../Types'
 
 type Listener = (payload: unknown) => void
 
@@ -108,7 +108,7 @@ describe('makeInMemoryStore', () => {
 
 			const restored = makeInMemoryStore()
 			restored.readFromFile(filePath)
-			const restoredMediaKey = (restored.loadMessage(jid, 'media-1')?.message?.imageMessage?.mediaKey)
+			const restoredMediaKey = restored.loadMessage(jid, 'media-1')?.message?.imageMessage?.mediaKey
 			expect(Buffer.isBuffer(restoredMediaKey)).toBe(true)
 			expect(restoredMediaKey).toEqual(mediaKey)
 		} finally {
