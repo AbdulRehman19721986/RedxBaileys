@@ -69,7 +69,7 @@ export function makeCacheableSignalKeyStore(
 					const id = ids[index]!
 					const item = cachedItems[index]
 					if (typeof item !== 'undefined') {
-						data[id] = item
+						data[id] = item as unknown as SignalDataTypeMap[typeof type]
 					} else {
 						idsToFetch.push(id)
 					}
@@ -82,7 +82,7 @@ export function makeCacheableSignalKeyStore(
 						idsToFetch.map(async id => {
 							const item = fetched[id]
 							if (item) {
-								data[id] = item
+								data[id] = item as unknown as SignalDataTypeMap[typeof type]
 								// eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
 								await cache.set(getUniqueId(type, id), item as SignalDataTypeMap[keyof SignalDataTypeMap])
 							}
@@ -99,7 +99,7 @@ export function makeCacheableSignalKeyStore(
 				const cacheWrites: Promise<unknown>[] = []
 				for (const type in data) {
 					for (const id in data[type as keyof SignalDataTypeMap]) {
-						cacheWrites.push(cache.set(getUniqueId(type, id), data[type as keyof SignalDataTypeMap]![id]!))
+						cacheWrites.push(Promise.resolve(cache.set(getUniqueId(type, id), data[type as keyof SignalDataTypeMap]![id]!)))
 						keys += 1
 					}
 				}
