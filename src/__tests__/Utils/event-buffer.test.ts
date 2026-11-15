@@ -15,6 +15,47 @@ const makeTestLogger = (): ILogger =>
 	}) as unknown as ILogger
 
 describe('event-buffer', () => {
+	describe('encrypted edit actor metadata buffering', () => {
+		it('keeps the latest editor when updates for one target are consolidated', async () => {
+			const ev = makeEventBuffer(makeTestLogger())
+			const received: BaileysEventMap['messages.update'][] = []
+			ev.on('messages.update', updates => received.push(updates))
+
+			ev.buffer()
+			ev.emit('messages.update', [{
+				key: {
+					remoteJid: '120363000000000000@g.us',
+					id: 'same-target',
+					fromMe: true,
+					editActorJid: 'first-editor@lid',
+					editActorFromMe: false,
+					editActorPushName: 'First editor'
+				},
+				update: { message: { editedMessage: { message: { conversation: 'first edit' } } } }
+			}])
+			ev.emit('messages.update', [{
+				key: {
+					remoteJid: '120363000000000000@g.us',
+					id: 'same-target',
+					fromMe: true,
+					editActorJid: 'second-editor@s.whatsapp.net',
+					editActorFromMe: false,
+					editActorPushName: 'Second editor'
+				},
+				update: { message: { editedMessage: { message: { conversation: 'second edit' } } } }
+			}])
+			ev.flush()
+
+			await new Promise(resolve => setTimeout(resolve, 100))
+			expect(received).toHaveLength(1)
+			expect(received[0]).toHaveLength(1)
+			expect(received[0]![0]!.key.editActorJid).toBe('second-editor@s.whatsapp.net')
+			expect(received[0]![0]!.key.editActorFromMe).toBe(false)
+			expect(received[0]![0]!.key.editActorPushName).toBe('Second editor')
+			expect(received[0]![0]!.update.message?.editedMessage?.message?.conversation).toBe('second edit')
+		})
+	})
+
 	describe('messaging-history.set pastParticipants buffering', () => {
 		it('should include pastParticipants in flushed event', async () => {
 			const logger = makeTestLogger()
