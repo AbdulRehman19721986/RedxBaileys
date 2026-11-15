@@ -25,6 +25,12 @@ export type WAMessageKey = proto.IMessageKey & {
 	server_id?: string
 	addressingMode?: string
 	isViewOnce?: boolean // TODO: remove out of the message key, place in WebMessageInfo
+	/** Actual author of an encrypted MESSAGE_EDIT; the event key otherwise identifies the original message author. */
+	editActorJid?: string
+	/** Whether the encrypted edit envelope was sent by this connected account. */
+	editActorFromMe?: boolean
+	/** Push name on the encrypted edit envelope, when supplied by WhatsApp. */
+	editActorPushName?: string
 }
 export type WATextMessage = proto.Message.IExtendedTextMessage
 export type WAContextInfo = proto.IContextInfo
