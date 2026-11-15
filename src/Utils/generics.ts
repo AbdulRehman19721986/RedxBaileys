@@ -2,7 +2,7 @@ import { Boom } from '@hapi/boom'
 import { createHash, randomBytes } from 'crypto'
 import type Long from 'long'
 import { proto } from '../../WAProto/index.js'
-const baileysVersion = [2, 3000, 1043857760]
+const baileysVersion = [2, 3000, 1054660005]
 import type {
 	BaileysEventEmitter,
 	BaileysEventMap,
@@ -255,7 +255,7 @@ export const fetchLatestWaWebVersion = async (options: RequestInit = {}) => {
 		const defaultHeaders = {
 			'sec-fetch-site': 'none',
 			'user-agent':
-				'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36'
+				'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.8103.78 Safari/537.36'
 		}
 
 		const headers = { ...defaultHeaders, ...options.headers }
