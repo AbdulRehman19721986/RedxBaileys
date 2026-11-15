@@ -6,6 +6,26 @@ import { getBinaryNodeChild } from '../WABinary'
 import { makeGroupsSocket } from './groups'
 import { executeWMexQuery as genericExecuteWMexQuery } from './mex'
 
+/** Accept either a bare invite code or a full WhatsApp channel URL. */
+const extractNewsletterInviteCode = (value: string): string => {
+	const trimmed = value.trim()
+	if (!trimmed) {
+		throw new Error('Newsletter invite code or channel URL is required')
+	}
+
+	try {
+		const url = new URL(trimmed)
+		if (url.hostname === 'whatsapp.com' || url.hostname === 'www.whatsapp.com') {
+			const match = url.pathname.match(/^\/channel\/([^/]+)\/?$/)
+			if (match?.[1]) return decodeURIComponent(match[1])
+		}
+	} catch {
+		// A bare invite code is expected and should pass through unchanged.
+	}
+
+	return trimmed
+}
+
 const parseNewsletterCreateResponse = (response: NewsletterCreateResponse): NewsletterMetadata => {
 	const { id, thread_metadata: thread, viewer_metadata: viewer } = response
 	return {
@@ -119,12 +139,13 @@ export const makeNewsletterSocket = (config: SocketConfig) => {
 		},
 
 		newsletterMetadata: async (type: 'invite' | 'jid', key: string) => {
+			const lookupKey = type === 'invite' ? extractNewsletterInviteCode(key) : key.trim()
 			const variables = {
 				fetch_creation_time: true,
 				fetch_full_image: true,
 				fetch_viewer_metadata: true,
 				input: {
-					key,
+					key: lookupKey,
 					type: type.toUpperCase()
 				}
 			}
