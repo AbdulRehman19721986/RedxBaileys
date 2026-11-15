@@ -22,6 +22,7 @@ export const decryptMessageEdit = (
 	if (messageSecret.byteLength !== 32) {
 		throw new Error(`Invalid MESSAGE_EDIT message secret length: expected 32, got ${messageSecret.byteLength}`)
 	}
+
 	if (!encPayload?.length) {
 		throw new Error('Invalid MESSAGE_EDIT payload: missing encrypted content')
 	}
