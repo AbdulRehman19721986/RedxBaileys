@@ -8,6 +8,12 @@ import { decryptMessageEdit, isEncryptedMessageEdit } from '../../Utils/decrypt-
 import { processMessage } from '../../Utils/process-message'
 import { jidNormalizedUser } from '../../WABinary'
 
+
+const createHmacKey = (data: Uint8Array, key: Uint8Array = Buffer.alloc(32)): Buffer => {
+	const { createHmac } = require('node:crypto') as typeof import('node:crypto')
+	return createHmac('sha256', key).update(data).digest()
+}
+
 const secret = Buffer.alloc(32, 7)
 const iv = Buffer.alloc(12, 8)
 const originalId = 'fictional-original-message'
@@ -153,4 +159,69 @@ describe('encrypted WhatsApp MESSAGE_EDIT', () => {
 		expect(Buffer.from(decoded.fullMessage.message?.messageContextInfo?.messageSecret || [])).toEqual(secret)
 		expect(decoded.fullMessage.message?.messageContextInfo?.deviceListMetadataVersion).toBe(2)
 	})
+
+	it('decrypts an edit made by a different group participant than the original sender', async () => {
+		const editor = '123450099:7@s.whatsapp.net'
+		const originalSender = editorPn
+		const editorUser = jidNormalizedUser(editor)
+		const originalSenderUser = jidNormalizedUser(originalSender)
+		const editText = 'Edited by another group member'
+		const editPlaintext = proto.Message.encode({
+			protocolMessage: {
+				type: proto.Message.ProtocolMessage.Type.MESSAGE_EDIT,
+				key: { id: originalId, fromMe: false },
+				editedMessage: { conversation: editText },
+				timestampMs: 1700000001000
+			}
+		}).finish()
+		const info = Buffer.concat([
+			Buffer.from(originalId),
+			Buffer.from(originalSenderUser),
+			Buffer.from(editorUser),
+			Buffer.from('Message Edit'),
+			new Uint8Array([1])
+		])
+		const key0 = createHmacKey(secret)
+		const derived = createHmacKey(info, key0)
+		const editCipher = createCipheriv('aes-256-gcm', derived, iv)
+		const payload = Buffer.concat([editCipher.update(editPlaintext), editCipher.final(), editCipher.getAuthTag()])
+		const target = {
+			remoteJid: groupJid,
+			fromMe: false,
+			id: originalId,
+			participant: originalSender,
+			participantAlt: originalSender
+		}
+		const envelope: WAMessage = {
+			key: { remoteJid: groupJid, fromMe: false, id: 'edit-by-other', participant: editor, participantAlt: editor },
+			message: {
+				secretEncryptedMessage: {
+					secretEncType: proto.Message.SecretEncryptedMessage.SecretEncType.MESSAGE_EDIT,
+					targetMessageKey: target,
+					encIv: iv,
+					encPayload: payload
+				}
+			},
+			messageTimestamp: 1700000001
+		}
+		const events: Array<{ name: string; payload: unknown }> = []
+		const context = {
+			shouldProcessHistoryMsg: false,
+			creds: { me: { id: '999999999@s.whatsapp.net', lid: '999999999@lid' } },
+			keyStore: {},
+			ev: { emit: (name: string, value: unknown) => { events.push({ name, payload: value }); return true } },
+			options: {},
+			signalRepository: {},
+			getMessage: async () => ({
+				messageContextInfo: { messageSecret: secret },
+				conversation: 'Original message'
+			})
+		} as unknown as Parameters<typeof processMessage>[1]
+		await processMessage(envelope, context)
+		const update = events.find(event => event.name === 'messages.update')?.payload as Array<{
+			update: { message?: proto.IMessage }
+		}>
+		expect(update?.[0]?.update.message?.editedMessage?.message?.conversation).toBe(editText)
+	})
+
 })
