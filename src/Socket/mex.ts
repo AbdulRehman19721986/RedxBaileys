@@ -1,5 +1,5 @@
 import { Boom } from '@hapi/boom'
-import { getBinaryNodeChild, S_WHATSAPP_NET, type BinaryNode } from '../WABinary'
+import { type BinaryNode, getBinaryNodeChild, S_WHATSAPP_NET } from '../WABinary'
 
 const wMexQuery = (
 	variables: Record<string, unknown>,
@@ -59,11 +59,8 @@ export const extractNewsletterJidFromBinaryNode = (node: BinaryNode | undefined)
 }
 
 const parseWMexJson = (content: BinaryNode['content']): Record<string, unknown> | null => {
-	const raw = typeof content === 'string'
-		? content
-		: content instanceof Uint8Array
-			? Buffer.from(content).toString('utf8')
-			: null
+	const raw =
+		typeof content === 'string' ? content : content instanceof Uint8Array ? Buffer.from(content).toString('utf8') : null
 	if (!raw) return null
 
 	const candidates = [raw.trim()]
@@ -81,6 +78,7 @@ const parseWMexJson = (content: BinaryNode['content']): Record<string, unknown> 
 			// Try the next possible JSON boundary before reporting a bad payload.
 		}
 	}
+
 	return null
 }
 
@@ -104,6 +102,7 @@ export const executeWMexQuery = async <T>(
 				const id = extractNewsletterJidFromBinaryNode(child)
 				if (id) return { id } as T
 			}
+
 			throw new Boom(`Failed to parse ${action} response: expected a JSON WMex result.`, {
 				statusCode: 502,
 				data: { queryId, dataPath, responseTag: result.tag, responseAttrs: result.attrs }
