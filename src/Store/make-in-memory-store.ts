@@ -1,5 +1,5 @@
-import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs'
 import { randomUUID } from 'node:crypto'
+import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs'
 import { dirname } from 'node:path'
 import type {
 	BaileysEventEmitter,
@@ -29,6 +29,7 @@ const messageTimestamp = (message: WAMessage): number => {
 		const toNumber = (timestamp as { toNumber?: () => number }).toNumber
 		if (typeof toNumber === 'function') return toNumber.call(timestamp)
 	}
+
 	return Number(timestamp ?? 0)
 }
 
@@ -55,7 +56,9 @@ class MemoryChatCollection {
 		for (const update of chats) {
 			if (!update.id) continue
 			const current = this.records.get(update.id) || ({ id: update.id } as Chat)
-			const { conditional: _conditional, timestamp: _timestamp, ...patch } = update
+			const patch = { ...update }
+			delete patch.conditional
+			delete patch.timestamp
 			this.records.set(update.id, { ...current, ...patch } as Chat)
 		}
 	}
@@ -132,6 +135,7 @@ class MemoryMessageCollections {
 			bucket = new MemoryMessageBucket(this.maxMessagesPerChat)
 			this.chats.set(jid, bucket)
 		}
+
 		return bucket
 	}
 
@@ -193,9 +197,10 @@ class MemoryMessageCollections {
  * with the traditional Baileys store API; call them outside latency-sensitive handlers.
  */
 export const makeInMemoryStore = (options: InMemoryStoreOptions = {}) => {
-	const maxMessages = Number.isInteger(options.maxMessagesPerChat) && (options.maxMessagesPerChat as number) > 0
-		? (options.maxMessagesPerChat as number)
-		: 1000
+	const maxMessages =
+		Number.isInteger(options.maxMessagesPerChat) && (options.maxMessagesPerChat as number) > 0
+			? (options.maxMessagesPerChat as number)
+			: 1000
 
 	const chats = new MemoryChatCollection()
 	const messages = new MemoryMessageCollections(maxMessages)
@@ -226,10 +231,7 @@ export const makeInMemoryStore = (options: InMemoryStoreOptions = {}) => {
 		bind(ev: BaileysEventEmitter): () => void {
 			removeListeners()
 			const cleanups: Array<() => void> = []
-			const listen = <K extends keyof BaileysEventMap>(
-				event: K,
-				listener: (payload: BaileysEventMap[K]) => void
-			) => {
+			const listen = <K extends keyof BaileysEventMap>(event: K, listener: (payload: BaileysEventMap[K]) => void) => {
 				ev.on(event, listener)
 				cleanups.push(() => ev.off(event, listener))
 			}
@@ -261,6 +263,7 @@ export const makeInMemoryStore = (options: InMemoryStoreOptions = {}) => {
 			removeListeners = () => {
 				for (const cleanup of cleanups.splice(0)) cleanup()
 			}
+
 			return removeListeners
 		},
 
@@ -284,6 +287,7 @@ export const makeInMemoryStore = (options: InMemoryStoreOptions = {}) => {
 				if (value && value.__redxStoreType === 'Uint8Array' && Array.isArray(value.data)) {
 					return Uint8Array.from(value.data)
 				}
+
 				return value
 			}) as Partial<PersistedStore>
 
@@ -294,6 +298,7 @@ export const makeInMemoryStore = (options: InMemoryStoreOptions = {}) => {
 			else if (parsed.contacts && typeof parsed.contacts === 'object') {
 				upsertContacts(Object.values(parsed.contacts) as Contact[])
 			}
+
 			messages.loadFromObject(parsed.messages)
 		},
 
@@ -307,6 +312,7 @@ export const makeInMemoryStore = (options: InMemoryStoreOptions = {}) => {
 				if (value instanceof Uint8Array && !Buffer.isBuffer(value)) {
 					return { __redxStoreType: 'Uint8Array', data: Array.from(value) }
 				}
+
 				return value
 			})
 			const temporaryPath = filePath + '.' + process.pid + '.' + randomUUID() + '.tmp'
@@ -320,6 +326,7 @@ export const makeInMemoryStore = (options: InMemoryStoreOptions = {}) => {
 				} catch {
 					// Preserve the original write/rename error.
 				}
+
 				throw error
 			}
 		},
