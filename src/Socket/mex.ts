@@ -97,7 +97,7 @@ export const executeWMexQuery = async <T>(
 		? dataPath.substring(5).replace(/_/g, ' ')
 		: dataPath?.replace(/_/g, ' ')
 
-	if (child?.content) {
+	if (child) {
 		const data = parseWMexJson(child.content)
 		if (!data) {
 			if (dataPath === 'xwa2_newsletter_metadata') {
