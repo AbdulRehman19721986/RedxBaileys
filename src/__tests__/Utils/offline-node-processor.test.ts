@@ -216,6 +216,25 @@ describe('makeOfflineNodeProcessor', () => {
 		})
 	})
 
+	describe('large offline backlogs', () => {
+		it('processes a large queue in FIFO order without dropping entries', async () => {
+			const count = 4096
+			const processed: string[] = []
+			let finish!: () => void
+			const completed = new Promise<void>(resolve => (finish = resolve))
+			const handler = jest.fn<(node: BinaryNode) => Promise<void>>().mockImplementation(async node => {
+				processed.push(node.attrs.id!)
+				if (processed.length === count) finish()
+			})
+			const processor = createProcessor(new Map([['message', handler]]), 128)
+			for (let i = 0; i < count; i++) processor.enqueue('message', makeNode(`msg-${i}`))
+			await completed
+			expect(processed).toHaveLength(count)
+			expect(processed[0]).toBe('msg-0')
+			expect(processed[count - 1]).toBe(`msg-${count - 1}`)
+			expect(processed.every((id, index) => id === `msg-${index}`)).toBe(true)
+		})
+	})
 	describe('batch yielding', () => {
 		it('should yield to event loop after batchSize nodes', async () => {
 			const handler = jest.fn<(node: BinaryNode) => Promise<void>>().mockResolvedValue(undefined)
