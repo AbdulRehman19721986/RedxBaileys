@@ -350,6 +350,7 @@ export const decryptMessageNode = (
 								}
 							}
 						}
+
 						if (msg.senderKeyDistributionMessage) {
 							//eslint-disable-next-line max-depth
 							try {
