@@ -534,6 +534,16 @@ function append<E extends BufferableEvent>(
 				} else {
 					const msgUpdate = data.messageUpdates[keyStr] || { key, update: {} }
 					Object.assign(msgUpdate.update, update)
+					// Multiple edits can be consolidated in one buffer window. The
+					// key remains the original message key, so explicitly retain
+					// the newest encrypted edit actor metadata when it is supplied.
+					if (typeof key.editActorJid === 'string') {
+						msgUpdate.key.editActorJid = key.editActorJid
+						msgUpdate.key.editActorFromMe = key.editActorFromMe
+						if (typeof key.editActorPushName === 'string') {
+							msgUpdate.key.editActorPushName = key.editActorPushName
+						}
+					}
 					data.messageUpdates[keyStr] = msgUpdate
 				}
 			}
