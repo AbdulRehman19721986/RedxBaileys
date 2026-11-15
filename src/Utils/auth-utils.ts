@@ -69,7 +69,7 @@ export function makeCacheableSignalKeyStore(
 					const id = ids[index]!
 					const item = cachedItems[index]
 					if (typeof item !== 'undefined') {
-						data[id] = item
+						data[id] = item as SignalDataTypeMap[typeof type]
 					} else {
 						idsToFetch.push(id)
 					}
@@ -96,10 +96,10 @@ export function makeCacheableSignalKeyStore(
 		async set(data) {
 			return cacheMutex.runExclusive(async () => {
 				let keys = 0
-				const cacheWrites: Promise<unknown>[] = []
+				const cacheWrites: Array<Promise<unknown>> = []
 				for (const type in data) {
 					for (const id in data[type as keyof SignalDataTypeMap]) {
-						cacheWrites.push(cache.set(getUniqueId(type, id), data[type as keyof SignalDataTypeMap]![id]!))
+						cacheWrites.push(Promise.resolve(cache.set(getUniqueId(type, id), data[type as keyof SignalDataTypeMap]![id]!)))
 						keys += 1
 					}
 				}
