@@ -22,7 +22,8 @@ describe('event-buffer', () => {
 			ev.on('messages.update', updates => received.push(updates))
 
 			ev.buffer()
-			ev.emit('messages.update', [{
+			ev.emit('messages.update', [
+				{
 				key: {
 					remoteJid: '120363000000000000@g.us',
 					id: 'same-target',
@@ -32,8 +33,10 @@ describe('event-buffer', () => {
 					editActorPushName: 'First editor'
 				},
 				update: { message: { editedMessage: { message: { conversation: 'first edit' } } } }
-			}])
-			ev.emit('messages.update', [{
+				}
+			])
+			ev.emit('messages.update', [
+				{
 				key: {
 					remoteJid: '120363000000000000@g.us',
 					id: 'same-target',
@@ -43,7 +46,8 @@ describe('event-buffer', () => {
 					editActorPushName: 'Second editor'
 				},
 				update: { message: { editedMessage: { message: { conversation: 'second edit' } } } }
-			}])
+				}
+			])
 			ev.flush()
 
 			await new Promise(resolve => setTimeout(resolve, 100))
