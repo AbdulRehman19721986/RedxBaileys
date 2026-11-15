@@ -24,28 +24,28 @@ describe('event-buffer', () => {
 			ev.buffer()
 			ev.emit('messages.update', [
 				{
-				key: {
-					remoteJid: '120363000000000000@g.us',
-					id: 'same-target',
-					fromMe: true,
-					editActorJid: 'first-editor@lid',
-					editActorFromMe: false,
-					editActorPushName: 'First editor'
-				},
-				update: { message: { editedMessage: { message: { conversation: 'first edit' } } } }
+					key: {
+						remoteJid: '120363000000000000@g.us',
+						id: 'same-target',
+						fromMe: true,
+						editActorJid: 'first-editor@lid',
+						editActorFromMe: false,
+						editActorPushName: 'First editor'
+					},
+					update: { message: { editedMessage: { message: { conversation: 'first edit' } } } }
 				}
 			])
 			ev.emit('messages.update', [
 				{
-				key: {
-					remoteJid: '120363000000000000@g.us',
-					id: 'same-target',
-					fromMe: true,
-					editActorJid: 'second-editor@s.whatsapp.net',
-					editActorFromMe: false,
-					editActorPushName: 'Second editor'
-				},
-				update: { message: { editedMessage: { message: { conversation: 'second edit' } } } }
+					key: {
+						remoteJid: '120363000000000000@g.us',
+						id: 'same-target',
+						fromMe: true,
+						editActorJid: 'second-editor@s.whatsapp.net',
+						editActorFromMe: false,
+						editActorPushName: 'Second editor'
+					},
+					update: { message: { editedMessage: { message: { conversation: 'second edit' } } } }
 				}
 			])
 			ev.flush()
