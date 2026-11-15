@@ -78,7 +78,9 @@ export const DEFAULT_CONNECTION_CONFIG: SocketConfig = {
 	patchMessageBeforeSending: msg => msg,
 	shouldSyncHistoryMessage: ({ syncType }: proto.Message.IHistorySyncNotification) => {
 		// Only sync recent + push_name; skip FULL and INITIAL_BOOTSTRAP for speed
-		return syncType === proto.HistorySync.HistorySyncType.RECENT || syncType === proto.HistorySync.HistorySyncType.PUSH_NAME
+		return (
+			syncType === proto.HistorySync.HistorySyncType.RECENT || syncType === proto.HistorySync.HistorySyncType.PUSH_NAME
+		)
 	},
 	shouldIgnoreJid: () => false,
 	linkPreviewImageThumbnailWidth: 192,
