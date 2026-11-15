@@ -101,7 +101,7 @@ export class MemoryMessageBucket {
 	update(id: string, update: Partial<WAMessage>): void {
 		const current = this.records.get(id)
 		if (!current) return
-		this.records.set(id, { ...current, ...update, key: { ...current.key, ...update.key } } as WAMessage)
+		this.records.set(id, { ...current, ...update, key: { ...current.key, ...(update.key || {}) } } as WAMessage)
 	}
 
 	delete(ids: string[]): void {
