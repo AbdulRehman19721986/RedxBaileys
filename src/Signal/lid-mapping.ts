@@ -42,6 +42,7 @@ export class LIDMappingStore {
 				this.logger.warn(`Invalid LID-PN mapping: ${lid}, ${pn}`)
 				continue
 			}
+
 			const lidDecoded = jidDecode(lid)
 			const pnDecoded = jidDecode(pn)
 			if (!lidDecoded || !pnDecoded) continue
@@ -85,6 +86,7 @@ export class LIDMappingStore {
 					this.logger.debug({ pnUser, lidUser }, 'LID mapping already exists, skipping')
 					continue
 				}
+
 				pairMap[pnUser] = lidUser
 			}
 
