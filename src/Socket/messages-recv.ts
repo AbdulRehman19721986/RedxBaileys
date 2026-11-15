@@ -1649,66 +1649,54 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 						}
 
 						if (unavailableType === 'view_once_unavailable_fanout') {
-							// Nov 2026: WA sends view_once_unavailable_fanout to non-Android companions.
-							// The view-once content is unavailable on this platform, but we still emit
-							// a stub so the app can display a "View once: unavailable" placeholder.
-							logger.info(
-								{ msgId: msg.key.id },
-								'view-once message unavailable on this platform (non-Android companion)'
-							)
+							// Non-Android companions receive an explicit unavailable stub; a resend cannot restore this content.
+							logger.info({ msgId: msg.key.id }, 'view-once message unavailable on this platform (non-Android companion)')
 							msg.messageStubParameters = [
 								...(msg.messageStubParameters || []),
 								'view_once_unavailable'
 							]
 							acked = true
 							await sendMessageAck(node)
-							// Fall through to upsertMessage so the stub is emitted to the app
-						}
+						} else {
+							const messageAge = unixTimestampSeconds() - toNumber(msg.messageTimestamp)
+							if (messageAge > PLACEHOLDER_MAX_AGE_SECONDS) {
+								logger.debug({ msgId: msg.key.id, messageAge }, 'skipping placeholder resend for old message')
+								acked = true
+								return sendMessageAck(node)
+							}
 
-						const messageAge = unixTimestampSeconds() - toNumber(msg.messageTimestamp)
-						if (messageAge > PLACEHOLDER_MAX_AGE_SECONDS) {
-							logger.debug({ msgId: msg.key.id, messageAge }, 'skipping placeholder resend for old message')
+							const cleanKey: proto.IMessageKey = {
+								remoteJid: msg.key.remoteJid,
+								fromMe: msg.key.fromMe,
+								id: msg.key.id,
+								participant: msg.key.participant
+							}
+							const msgData: Partial<WAMessage> = {
+								key: msg.key,
+								messageTimestamp: msg.messageTimestamp,
+								pushName: msg.pushName,
+								participant: msg.participant,
+								verifiedBizName: msg.verifiedBizName
+							}
+							requestPlaceholderResend(cleanKey, msgData)
+								.then(requestId => {
+									if (requestId && requestId !== 'RESOLVED') {
+										logger.debug({ msgId: msg.key.id, requestId }, 'requested placeholder resend for unavailable message')
+										ev.emit('messages.update', [
+											{
+												key: msg.key,
+												update: { messageStubParameters: [NO_MESSAGE_FOUND_ERROR_TEXT, requestId] }
+											}
+										])
+									}
+								})
+								.catch(err => {
+									logger.warn({ err, msgId: msg.key.id }, 'failed to request placeholder resend for unavailable message')
+								})
 							acked = true
-							return sendMessageAck(node)
+							await sendMessageAck(node)
 						}
-
-						// Request the real content from the phone via placeholder resend PDO.
-						// Upsert the CIPHERTEXT stub as a placeholder (like WA Web's processPlaceholderMsg),
-						// and store the requestId in stubParameters[1] so users can correlate
-						// with the incoming PDO response event.
-						const cleanKey: proto.IMessageKey = {
-							remoteJid: msg.key.remoteJid,
-							fromMe: msg.key.fromMe,
-							id: msg.key.id,
-							participant: msg.key.participant
-						}
-						// Cache the original message metadata so the PDO response handler
-						// can preserve key fields (LID details etc.) that the phone may omit
-						const msgData: Partial<WAMessage> = {
-							key: msg.key,
-							messageTimestamp: msg.messageTimestamp,
-							pushName: msg.pushName,
-							participant: msg.participant,
-							verifiedBizName: msg.verifiedBizName
-						}
-						requestPlaceholderResend(cleanKey, msgData)
-							.then(requestId => {
-								if (requestId && requestId !== 'RESOLVED') {
-									logger.debug({ msgId: msg.key.id, requestId }, 'requested placeholder resend for unavailable message')
-									ev.emit('messages.update', [
-										{
-											key: msg.key,
-											update: { messageStubParameters: [NO_MESSAGE_FOUND_ERROR_TEXT, requestId] }
-										}
-									])
-								}
-							})
-							.catch(err => {
-								logger.warn({ err, msgId: msg.key.id }, 'failed to request placeholder resend for unavailable message')
-							})
-						acked = true
-						await sendMessageAck(node)
-						// Don't return — fall through to upsertMessage so the stub is emitted
+						// Continue to upsertMessage so either the placeholder or unavailable stub is emitted
 					} else {
 						// Skip retry for expired status messages (>24h old)
 						if (isJidStatusBroadcast(msg.key.remoteJid!)) {
