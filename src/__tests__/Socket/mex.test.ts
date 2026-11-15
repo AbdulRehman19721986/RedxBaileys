@@ -66,12 +66,14 @@ describe('WMex newsletter metadata response handling', () => {
 			content: [{ tag: 'result', attrs: {}, content: Buffer.from([0x04, 0xff, 0x01]) }]
 		}
 
-		await expect(executeWMexQuery(
-			{},
-			'other-query',
-			'xwa2_newsletter_view',
-			async () => result,
-			() => 'test-tag'
-		)).rejects.toThrow(/expected a JSON WMex result/)
+		await expect(
+			executeWMexQuery(
+				{},
+				'other-query',
+				'xwa2_newsletter_view',
+				async () => result,
+				() => 'test-tag'
+			)
+		).rejects.toThrow(/expected a JSON WMex result/)
 	})
 })
