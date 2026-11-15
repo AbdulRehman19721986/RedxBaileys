@@ -31,8 +31,8 @@ import {
 	jidNormalizedUser
 } from '../WABinary'
 import { aesDecryptGCM, hmacSign } from './crypto'
-import { getKeyAuthor, toNumber } from './generics'
 import { decryptMessageEdit, isEncryptedMessageEdit } from './decrypt-message-edit'
+import { getKeyAuthor, toNumber } from './generics'
 import { downloadAndProcessHistorySyncNotification } from './history'
 import type { ILogger } from './logger'
 import { buildMergedTcTokenIndexWrite, resolveTcTokenJid } from './tc-token-utils'
@@ -385,6 +385,7 @@ export const processMessage = async (
 					}
 				}
 			])
+
 			logger?.debug({ targetMessageId: editedMessage.key.id }, 'decrypted encrypted WhatsApp message edit')
 		} catch (err) {
 			logger?.warn({ err, targetMessageId: target.id }, 'failed to decrypt encrypted WhatsApp MESSAGE_EDIT')
@@ -589,6 +590,7 @@ export const processMessage = async (
 					)
 					break
 				}
+
 				ev.emit('messages.update', [
 					{
 						// Keep envelope addressing, but target the original message ID.
