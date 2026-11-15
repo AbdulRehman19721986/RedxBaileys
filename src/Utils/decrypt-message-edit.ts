@@ -25,6 +25,7 @@ export const decryptMessageEdit = (
 	if (!encPayload?.length) {
 		throw new Error('Invalid MESSAGE_EDIT payload: missing encrypted content')
 	}
+
 	if (encIv?.length !== 12) {
 		throw new Error(`Invalid MESSAGE_EDIT IV length: expected 12, got ${encIv?.length ?? 0}`)
 	}
