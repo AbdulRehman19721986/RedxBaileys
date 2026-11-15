@@ -1692,9 +1692,9 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 								})
 								.catch(err => {
 									logger.warn(
-									{ err, msgId: msg.key.id },
-									'failed to request placeholder resend for unavailable message'
-								)
+										{ err, msgId: msg.key.id },
+										'failed to request placeholder resend for unavailable message'
+									)
 								})
 							acked = true
 							await sendMessageAck(node)
