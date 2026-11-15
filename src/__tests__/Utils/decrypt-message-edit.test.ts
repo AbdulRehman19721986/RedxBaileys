@@ -8,7 +8,6 @@ import { decryptMessageEdit, isEncryptedMessageEdit } from '../../Utils/decrypt-
 import { processMessage } from '../../Utils/process-message'
 import { jidNormalizedUser } from '../../WABinary'
 
-
 const createHmacKey = (data: Uint8Array, key: Uint8Array = Buffer.alloc(32)): Buffer =>
 	createHmac('sha256', key).update(data).digest()
 
@@ -207,7 +206,12 @@ describe('encrypted WhatsApp MESSAGE_EDIT', () => {
 			shouldProcessHistoryMsg: false,
 			creds: { me: { id: '999999999@s.whatsapp.net', lid: '999999999@lid' } },
 			keyStore: {},
-			ev: { emit: (name: string, value: unknown) => { events.push({ name, payload: value }); return true } },
+			ev: {
+				emit: (name: string, value: unknown) => {
+					events.push({ name, payload: value })
+					return true
+				}
+			},
 			options: {},
 			signalRepository: {},
 			getMessage: async () => ({
@@ -221,5 +225,4 @@ describe('encrypted WhatsApp MESSAGE_EDIT', () => {
 		}>
 		expect(update?.[0]?.update.message?.editedMessage?.message?.conversation).toBe(editText)
 	})
-
 })

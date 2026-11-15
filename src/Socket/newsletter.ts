@@ -111,6 +111,27 @@ export const makeNewsletterSocket = (config: SocketConfig) => {
 		return executeWMexQuery(variables, QueryIds.UPDATE_METADATA, 'xwa2_newsletter_update')
 	}
 
+	const newsletterMetadata = async (type: 'invite' | 'jid', key: string): Promise<NewsletterMetadata | null> => {
+		const lookupKey = type === 'invite' ? extractNewsletterInviteCode(key) : key.trim()
+		const variables = {
+			fetch_creation_time: true,
+			fetch_full_image: true,
+			fetch_viewer_metadata: true,
+			input: { key: lookupKey, type: type.toUpperCase() }
+		}
+		const result = await executeWMexQuery<unknown>(variables, QueryIds.METADATA, XWAPaths.xwa2_newsletter_metadata)
+		return parseNewsletterMetadata(result)
+	}
+
+	const newsletterJidFromInvite = async (inviteOrUrl: string): Promise<string> => {
+		const metadata = await newsletterMetadata('invite', inviteOrUrl)
+		if (!metadata?.id?.endsWith('@newsletter')) {
+			throw new Error('Unable to resolve WhatsApp Channel JID from the supplied invite link')
+		}
+
+		return metadata.id
+	}
+
 	return {
 		...sock,
 		newsletterCreate: async (name: string, description?: string): Promise<NewsletterMetadata> => {
@@ -138,20 +159,8 @@ export const makeNewsletterSocket = (config: SocketConfig) => {
 			)
 		},
 
-		newsletterMetadata: async (type: 'invite' | 'jid', key: string) => {
-			const lookupKey = type === 'invite' ? extractNewsletterInviteCode(key) : key.trim()
-			const variables = {
-				fetch_creation_time: true,
-				fetch_full_image: true,
-				fetch_viewer_metadata: true,
-				input: {
-					key: lookupKey,
-					type: type.toUpperCase()
-				}
-			}
-			const result = await executeWMexQuery<unknown>(variables, QueryIds.METADATA, XWAPaths.xwa2_newsletter_metadata)
-			return parseNewsletterMetadata(result)
-		},
+		newsletterMetadata,
+		newsletterJidFromInvite,
 
 		newsletterFollow: (jid: string) => {
 			return executeWMexQuery({ newsletter_id: jid }, QueryIds.FOLLOW, XWAPaths.xwa2_newsletter_join_v2)
