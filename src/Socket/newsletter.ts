@@ -37,6 +37,7 @@ const parseNewsletterMetadata = (result: unknown): NewsletterMetadata | null => 
 		if (r.thread_metadata && typeof r.thread_metadata === 'object') {
 			return parseNewsletterCreateResponse(result as NewsletterCreateResponse)
 		}
+
 		return result as NewsletterMetadata
 	}
 
@@ -56,16 +57,14 @@ const parseNewsletterMetadata = (result: unknown): NewsletterMetadata | null => 
 			// Partial data — build best-effort flat object
 			const thread = r.thread_metadata as Record<string, unknown>
 			const nameObj = thread.name as Record<string, unknown> | undefined
-			const name = typeof thread.name === 'string'
-				? thread.name
-				: (nameObj?.text as string | undefined) ?? 'Unknown'
+			const name = typeof thread.name === 'string' ? thread.name : ((nameObj?.text as string | undefined) ?? 'Unknown')
 			return {
 				id: (r.id as string) ?? '',
 				name,
 				invite: thread.invite as string | undefined,
 				description: (thread.description as Record<string, unknown> | undefined)?.text as string | undefined,
 				subscribers: thread.subscribers_count ? parseInt(thread.subscribers_count as string, 10) : undefined,
-				verification: thread.verification as 'VERIFIED' | 'UNVERIFIED' | undefined,
+				verification: thread.verification as 'VERIFIED' | 'UNVERIFIED' | undefined
 			}
 		}
 	}
