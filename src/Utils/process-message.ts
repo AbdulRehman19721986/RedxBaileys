@@ -390,6 +390,7 @@ export const processMessage = async (
 		} catch (err) {
 			logger?.warn({ err, targetMessageId: target.id }, 'failed to decrypt encrypted WhatsApp MESSAGE_EDIT')
 		}
+
 		return
 	}
 
