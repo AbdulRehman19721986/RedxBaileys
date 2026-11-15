@@ -544,6 +544,7 @@ function append<E extends BufferableEvent>(
 							msgUpdate.key.editActorPushName = key.editActorPushName
 						}
 					}
+
 					data.messageUpdates[keyStr] = msgUpdate
 				}
 			}
