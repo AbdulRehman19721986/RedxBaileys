@@ -206,7 +206,12 @@ describe('encrypted WhatsApp MESSAGE_EDIT', () => {
 			shouldProcessHistoryMsg: false,
 			creds: { me: { id: meId, lid: '999999999@lid' } },
 			keyStore: {},
-			ev: { emit: (name: string, value: unknown) => { events.push({ name, payload: value }); return true } },
+			ev: {
+				emit: (name: string, value: unknown) => {
+					events.push({ name, payload: value })
+					return true
+				}
+			},
 			options: {},
 			signalRepository: {},
 			getMessage: async () => ({
