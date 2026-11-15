@@ -1636,10 +1636,7 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 						// Check if this is eligible for placeholder resend (matching WA Web filters).
 						const unavailableNode = getBinaryNodeChild(node, 'unavailable')
 						const unavailableType = unavailableNode?.attrs?.type
-						if (
-							unavailableType === 'bot_unavailable_fanout' ||
-							unavailableType === 'hosted_unavailable_fanout'
-						) {
+						if (unavailableType === 'bot_unavailable_fanout' || unavailableType === 'hosted_unavailable_fanout') {
 							logger.debug(
 								{ msgId: msg.key.id, unavailableType },
 								'skipping placeholder resend for excluded unavailable type'
@@ -1650,11 +1647,11 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 
 						if (unavailableType === 'view_once_unavailable_fanout') {
 							// Non-Android companions receive an explicit unavailable stub; a resend cannot restore this content.
-							logger.info({ msgId: msg.key.id }, 'view-once message unavailable on this platform (non-Android companion)')
-							msg.messageStubParameters = [
-								...(msg.messageStubParameters || []),
-								'view_once_unavailable'
-							]
+							logger.info(
+								{ msgId: msg.key.id },
+								'view-once message unavailable on this platform (non-Android companion)'
+							)
+							msg.messageStubParameters = [...(msg.messageStubParameters || []), 'view_once_unavailable']
 							acked = true
 							await sendMessageAck(node)
 						} else {
@@ -1681,7 +1678,10 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 							requestPlaceholderResend(cleanKey, msgData)
 								.then(requestId => {
 									if (requestId && requestId !== 'RESOLVED') {
-										logger.debug({ msgId: msg.key.id, requestId }, 'requested placeholder resend for unavailable message')
+										logger.debug(
+											{ msgId: msg.key.id, requestId },
+											'requested placeholder resend for unavailable message'
+										)
 										ev.emit('messages.update', [
 											{
 												key: msg.key,
@@ -1691,7 +1691,10 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 									}
 								})
 								.catch(err => {
-									logger.warn({ err, msgId: msg.key.id }, 'failed to request placeholder resend for unavailable message')
+									logger.warn(
+									{ err, msgId: msg.key.id },
+									'failed to request placeholder resend for unavailable message'
+								)
 								})
 							acked = true
 							await sendMessageAck(node)
