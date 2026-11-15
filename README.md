@@ -145,3 +145,60 @@ Based on [WhiskeySockets/Baileys](https://github.com/WhiskeySockets/Baileys)
 - Offline stanza backlogs use a head-index FIFO queue to avoid repeated `Array.shift()` reindexing while retaining ordered processing and event-loop yielding.
 
 These changes target specific compatibility and hot-path issues. Actual throughput still depends on network latency, server-side WhatsApp behavior, host resources, and the application-provided message store.
+
+## Safe API parity and built-in feature overview
+
+RedxBaileys implements the useful WhatsApp multi-device APIs from the reference package without depending on or embedding `@rakku-kun/baileys`.
+
+### Pairing, identity and LID/JID helpers
+
+- Pairing code: `sock.requestPairingCode(phoneNumber)`
+- Check numbers: `sock.onWhatsApp(phoneNumber)`
+- Resolve PN to LID: `await sock.getLIDForPN('923000000000@s.whatsapp.net')`
+- Resolve LID to PN: `await sock.getPNForLID('123456789@lid')`
+- JID helpers: `jidEncode`, `jidDecode`, `jidNormalizedUser`, `isJidGroup`, `isJidNewsletter`, and related helpers are exported from the package.
+
+### Messages, media and account operations
+
+The socket includes message sending and media upload/download, forwarding, edit/delete, view-once, reactions, polls, receipts/read state, presence, profile picture/status/name updates, status lookup, business profile lookup, blocklist actions, chat modifications, disappearing messages, call events and call rejection.
+
+### Groups, communities and newsletters
+
+Group APIs include metadata, creation, participant updates, subject/description, invite links, settings, disappearing mode and join-approval requests. Community and newsletter sockets provide their respective metadata, management, follow/unfollow, mute/unmute, reactions and message operations.
+
+### Optional in-memory store
+
+The optional store collects chat, contact and message events, keeps a bounded message history per chat (1000 by default), supports message lookup for retry/decryption flows, and can read/write a JSON snapshot. It is not enabled automatically; bind it explicitly.
+
+```ts
+import makeWASocket, { makeInMemoryStore, useMultiFileAuthState } from '@whiskeysockets/baileys'
+
+const store = makeInMemoryStore({ maxMessagesPerChat: 1000 })
+store.readFromFile('./baileys_store.json')
+
+const { state, saveCreds } = await useMultiFileAuthState('./auth')
+
+const sock = makeWASocket({
+  auth: state,
+  getMessage: async key => {
+    if (!key.remoteJid || !key.id) return undefined
+    return store.loadMessage(key.remoteJid, key.id)?.message
+  }
+})
+
+store.bind(sock.ev)
+sock.ev.on('creds.update', saveCreds)
+
+// Optional periodic snapshot; synchronous disk I/O is kept outside message handlers.
+const storeSnapshot = setInterval(() => store.writeToFile('./baileys_store.json'), 10_000)
+storeSnapshot.unref?.()
+
+// Call this during your own graceful shutdown handler.
+const saveStore = () => {
+  clearInterval(storeSnapshot)
+  store.writeToFile('./baileys_store.json')
+  store.close()
+}
+```
+
+For large production histories, use a database-backed message store instead of keeping unbounded history in process memory. The built-in store is intentionally bounded and optional.

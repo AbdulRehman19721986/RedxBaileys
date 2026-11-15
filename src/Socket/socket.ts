@@ -1184,6 +1184,10 @@ export const makeSocket = (config: SocketConfig) => {
 		sendWAMBuffer,
 		executeUSyncQuery,
 		onWhatsApp,
+		/** Resolve a phone-number JID to its linked-device LID using the persisted mapping/USync fallback. */
+		getLIDForPN: (pn: string) => signalRepository.lidMapping.getLIDForPN(pn),
+		/** Resolve a linked-device LID to its phone-number JID using the persisted mapping/USync fallback. */
+		getPNForLID: (lid: string) => signalRepository.lidMapping.getPNForLID(lid),
 		fetchAccountReachoutTimelock,
 		fetchNewChatMessageCap
 	}
