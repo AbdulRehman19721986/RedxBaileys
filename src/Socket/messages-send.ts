@@ -1273,7 +1273,7 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 		}
 	})
 
-	return {
+	const messageSocket = {
 		...sock,
 		userDevicesCache,
 		devicesMutex,
@@ -1430,5 +1430,15 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 				return fullMsg
 			}
 		}
+	}
+
+	return {
+		...messageSocket,
+		/**
+		 * Publish a text, image, or video update to the account's WhatsApp Status.
+		 * Uses the same media upload, encryption and retry path as sendMessage.
+		 */
+		sendStatus: async (content: AnyMessageContent, options: MiscMessageGenerationOptions = {}) =>
+			messageSocket.sendMessage('status@broadcast', content, options)
 	}
 }
