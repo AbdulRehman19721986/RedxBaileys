@@ -134,3 +134,14 @@ Use responsibly and in accordance with WhatsApp's Terms of Service.
 Based on [WhiskeySockets/Baileys](https://github.com/WhiskeySockets/Baileys)
 
 </div>
+
+## November 2026 compatibility and performance updates
+
+- The bundled WhatsApp Web fallback revision is synchronized to `2.3000.1054660005`, published by the upstream automated version-update PR on 15 November 2026. Runtime version discovery still checks `https://web.whatsapp.com/sw.js` and uses the bundled revision only when live discovery fails.
+- Encrypted WhatsApp `MESSAGE_EDIT` envelopes are authenticated and decrypted into `messages.update` events when the original message is available through `getMessage` with its `messageContextInfo.messageSecret` intact. The application message store must preserve that field.
+- Legacy `MESSAGE_EDIT` events without a target message ID are logged and skipped rather than being emitted with an incorrect message key.
+- A view-once fanout explicitly marked unavailable on a non-Android companion is acknowledged and surfaced as an unavailable stub; the library no longer issues an additional placeholder resend for that known-unavailable case.
+- PN↔LID mapping updates are serialized and unchanged mappings are a fast no-op. Forced Signal-session refresh is limited to new or changed mappings; known LIDs use normal session validation.
+- Offline stanza backlogs use a head-index FIFO queue to avoid repeated `Array.shift()` reindexing while retaining ordered processing and event-loop yielding.
+
+These changes target specific compatibility and hot-path issues. Actual throughput still depends on network latency, server-side WhatsApp behavior, host resources, and the application-provided message store.
