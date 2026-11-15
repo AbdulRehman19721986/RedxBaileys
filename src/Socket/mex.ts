@@ -1,5 +1,4 @@
 import { Boom } from '@hapi/boom'
-import type { BinaryNode } from '../WABinary'
 import { getBinaryNodeChild, S_WHATSAPP_NET, type BinaryNode } from '../WABinary'
 
 const wMexQuery = (
@@ -39,9 +38,9 @@ export const extractNewsletterJidFromBinaryNode = (node: BinaryNode | undefined)
 		}
 
 		const text = typeof value === 'string' ? value : Buffer.from(value).toString('latin1')
-		const explicit = text.match(/(?:^|[^0-9])(120363\\d{7,18})(?:@newsletter|[^0-9]|$)/g) || []
+		const explicit = text.match(/(?:^|[^0-9])(120363\d{7,18})(?:@newsletter|[^0-9]|$)/g) || []
 		for (const match of explicit) {
-			const digits = match.match(/120363\\d{7,18}/)?.[0]
+			const digits = match.match(/120363\d{7,18}/)?.[0]
 			if (digits) candidates.add(`${digits}@newsletter`)
 		}
 	}
