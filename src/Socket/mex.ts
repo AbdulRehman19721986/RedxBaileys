@@ -42,7 +42,6 @@ export const extractNewsletterJidFromBinaryNode = (node: BinaryNode | undefined)
 		for (const digits of explicit) {
 			candidates.add(`${digits}@newsletter`)
 		}
-		}
 	}
 
 	const visit = (current: BinaryNode | undefined, depth = 0) => {
