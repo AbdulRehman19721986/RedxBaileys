@@ -99,7 +99,9 @@ export function makeCacheableSignalKeyStore(
 				const cacheWrites: Promise<unknown>[] = []
 				for (const type in data) {
 					for (const id in data[type as keyof SignalDataTypeMap]) {
-						cacheWrites.push(Promise.resolve(cache.set(getUniqueId(type, id), data[type as keyof SignalDataTypeMap]![id]!)))
+						cacheWrites.push(
+							Promise.resolve(cache.set(getUniqueId(type, id), data[type as keyof SignalDataTypeMap]![id]!))
+						)
 						keys += 1
 					}
 				}

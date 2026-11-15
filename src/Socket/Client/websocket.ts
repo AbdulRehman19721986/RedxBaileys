@@ -36,8 +36,10 @@ export class WebSocketClient extends AbstractSocketClient {
 		this.socket.setMaxListeners(0)
 		// Disable Nagle delays for frequent small ACK/control frames.
 		this.socket.on('open', () => {
-			const transport = (this.socket as (WebSocket & { _socket?: { setNoDelay: (noDelay?: boolean) => void } }) | null)?._socket
-			transport?.setNoDelay(true)
+			const transport = this.socket as WebSocket & {
+				_socket?: { setNoDelay: (noDelay?: boolean) => void }
+			}
+			transport?._socket?.setNoDelay(true)
 		})
 
 		const events = ['close', 'error', 'upgrade', 'message', 'open', 'ping', 'pong', 'unexpected-response']

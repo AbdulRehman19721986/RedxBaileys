@@ -1,3 +1,4 @@
+import { jest } from '@jest/globals'
 import { makeCacheableSignalKeyStore } from '../../Utils/auth-utils'
 
 describe('makeCacheableSignalKeyStore batch IO', () => {
