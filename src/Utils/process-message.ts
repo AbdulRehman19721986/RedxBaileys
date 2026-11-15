@@ -369,7 +369,16 @@ export const processMessage = async (
 			}
 
 			const editedMessage: WAMessage = {
-				key: { ...targetKey, id: editProtocol.key?.id || target.id },
+				key: {
+					...targetKey,
+					id: editProtocol.key?.id || target.id,
+					// The update's primary key belongs to the ORIGINAL message.
+					// Preserve the actual editor separately so consumers never
+					// mistake the original author's fromMe/participant for the editor.
+					editActorJid: editorJid,
+					editActorFromMe: !!message.key.fromMe,
+					editActorPushName: message.pushName || undefined
+				},
 				message: {},
 				messageTimestamp: message.messageTimestamp
 			}
