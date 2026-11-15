@@ -1,7 +1,7 @@
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import type { BaileysEventEmitter, Contact, WAMessage } from '../../Types'
+import type { BaileysEventEmitter, WAMessage } from '../../Types'
 import { makeInMemoryStore } from '../../Store/make-in-memory-store'
 
 type Listener = (payload: unknown) => void
