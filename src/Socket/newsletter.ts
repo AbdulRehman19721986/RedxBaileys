@@ -16,7 +16,7 @@ const extractNewsletterInviteCode = (value: string): string => {
 	try {
 		const url = new URL(trimmed)
 		if (url.hostname === 'whatsapp.com' || url.hostname === 'www.whatsapp.com') {
-			const match = url.pathname.match(/^\\/channel\\/([^/]+)\\/?$/)
+			const match = url.pathname.match(/^\/channel\/([^/]+)\/?$/)
 			if (match?.[1]) return decodeURIComponent(match[1])
 		}
 	} catch {
