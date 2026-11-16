@@ -785,9 +785,7 @@ export const makeSocket = (config: SocketConfig) => {
 	const requestPairingCode = async (phoneNumber: string, customPairingCode?: string): Promise<string> => {
 		// Waiting for ws.open alone is insufficient: the Noise handshake may still
 		// be in progress, causing WhatsApp to ignore the companion registration IQ.
-		await promiseTimeout<void>(connectTimeoutMs, (resolve, reject) => {
-			connectionReady.then(resolve, reject)
-		})
+		await connectionReady
 		const pairingCode = customPairingCode ?? bytesToCrockford(randomBytes(5))
 
 		if (customPairingCode && customPairingCode?.length !== 8) {
