@@ -392,6 +392,18 @@ export const makeSocket = (config: SocketConfig) => {
 	let qrTimer: NodeJS.Timeout
 	let closed = false
 
+	// The raw WebSocket "open" event fires before the WhatsApp Noise handshake
+	// has completed. Pairing-code IQs must not be encrypted/sent until finishInit().
+	let resolveConnectionReady: (() => void) | undefined
+	let rejectConnectionReady: ((error: Error) => void) | undefined
+	const connectionReady = new Promise<void>((resolve, reject) => {
+		resolveConnectionReady = resolve
+		rejectConnectionReady = reject
+	})
+	// A socket may close before anyone requests a pairing code; avoid an
+	// unhandled rejection while preserving the rejection for later awaiters.
+	connectionReady.catch(() => {})
+
 	const socketEndHandlers: Array<(error: Error | undefined) => void | Promise<void>> = []
 
 	/** log & process any unexpected errors */
@@ -466,6 +478,9 @@ export const makeSocket = (config: SocketConfig) => {
 			}).finish()
 		)
 		await noise.finishInit()
+		resolveConnectionReady?.()
+		resolveConnectionReady = undefined
+		rejectConnectionReady = undefined
 		startKeepAliveRequest()
 	}
 
@@ -631,6 +646,12 @@ export const makeSocket = (config: SocketConfig) => {
 		}
 
 		closed = true
+		if (rejectConnectionReady) {
+			rejectConnectionReady(
+				error || new Boom('Connection closed before the WhatsApp handshake completed', { statusCode: DisconnectReason.connectionClosed })
+			)
+			rejectConnectionReady = undefined
+		}
 		logger.info({ trace: error?.stack }, error ? 'connection errored' : 'connection closed')
 
 		clearInterval(keepAliveReq)
@@ -762,6 +783,11 @@ export const makeSocket = (config: SocketConfig) => {
 	}
 
 	const requestPairingCode = async (phoneNumber: string, customPairingCode?: string): Promise<string> => {
+		// Waiting for ws.open alone is insufficient: the Noise handshake may still
+		// be in progress, causing WhatsApp to ignore the companion registration IQ.
+		await promiseTimeout<void>(connectTimeoutMs, (resolve, reject) => {
+			connectionReady.then(resolve, reject)
+		})
 		const pairingCode = customPairingCode ?? bytesToCrockford(randomBytes(5))
 
 		if (customPairingCode && customPairingCode?.length !== 8) {
