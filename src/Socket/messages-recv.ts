@@ -1945,8 +1945,9 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 	const handleStatus = async (node: BinaryNode) => {
 		try {
 			await sendMessageAck(node)
-		} catch (error) {
-			onUnexpectedError(error, 'acking status stanza')
+		} catch (error: unknown) {
+			const ackError = error instanceof Error ? error : new Error(String(error))
+			onUnexpectedError(ackError, 'acking status stanza')
 		}
 	}
 
