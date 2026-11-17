@@ -1939,6 +1939,17 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 		}
 	}
 
+	// WhatsApp can deliver status updates as top-level <status> stanzas.
+	// They are transport notifications and must be ACKed; message content
+	// continues to be handled by the regular status@broadcast message path.
+	const handleStatus = async (node: BinaryNode) => {
+		try {
+			await sendMessageAck(node)
+		} catch (error) {
+			onUnexpectedError(error, 'acking status stanza')
+		}
+	}
+
 	/// processes a node with the given function
 	/// and adds the task to the existing buffer if we're buffering events
 	const processNodeWithBuffer = async <T>(
