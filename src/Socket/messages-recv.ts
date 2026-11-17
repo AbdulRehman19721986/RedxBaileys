@@ -1960,7 +1960,8 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 			['message', handleMessage],
 			['call', handleCall],
 			['receipt', handleReceipt],
-			['notification', handleNotification]
+			['notification', handleNotification],
+			['status', handleStatus]
 		]),
 		{
 			isWsOpen: () => ws.isOpen,
@@ -2017,6 +2018,9 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 
 	ws.on('CB:notification', async (node: BinaryNode) => {
 		await processNode('notification', node, 'handling notification', handleNotification)
+	})
+	ws.on('CB:status', async (node: BinaryNode) => {
+		await processNode('status', node, 'processing status stanza', handleStatus)
 	})
 	ws.on('CB:ack,class:message', (node: BinaryNode) => {
 		handleBadAck(node).catch(error => onUnexpectedError(error, 'handling bad ack'))
