@@ -78,25 +78,27 @@ Now delegates directly to `fetchLatestWaWebVersion`, which queries the live What
 
 ---
 
-### 6. Package Name Fixed for npm GitHub Install
-**File:** `package.json`
+### 6. npm Package Identity
 
-Package name set to `@whiskeysockets/baileys` so existing bots that `require('@whiskeysockets/baileys')` work without changing any import statements.
+The fork is published separately as `@redxmini/redx-baileys`. It is not the upstream `@whiskeysockets/baileys` package; update your dependency name when switching to this fork.
 
 ---
 
 ## Install
 
-### From GitHub (recommended)
+### From npm (recommended)
+```bash
+npm install @redxmini/redx-baileys
+```
+
+### From GitHub
 ```bash
 npm install github:AbdulRehman19721986/RedxBaileys
 ```
 
-No import changes needed — drop-in replacement for `@whiskeysockets/baileys`.
-
 ### In your `package.json`
 ```json
-"@whiskeysockets/baileys": "github:AbdulRehman19721986/RedxBaileys"
+"@redxmini/redx-baileys": "^7.0.0-rc15"
 ```
 
 ---
@@ -104,7 +106,7 @@ No import changes needed — drop-in replacement for `@whiskeysockets/baileys`.
 ## Quick Start
 
 ```ts
-import makeWASocket, { Browsers, useMultiFileAuthState } from '@whiskeysockets/baileys'
+import makeWASocket, { Browsers, useMultiFileAuthState } from '@redxmini/redx-baileys'
 
 const { state, saveCreds } = await useMultiFileAuthState('auth')
 
@@ -171,7 +173,7 @@ Group APIs include metadata, creation, participant updates, subject/description,
 The optional store collects chat, contact and message events, keeps a bounded message history per chat (1000 by default), supports message lookup for retry/decryption flows, and can read/write a JSON snapshot. It is not enabled automatically; bind it explicitly.
 
 ```ts
-import makeWASocket, { makeInMemoryStore, useMultiFileAuthState } from '@whiskeysockets/baileys'
+import makeWASocket, { makeInMemoryStore, useMultiFileAuthState } from '@redxmini/redx-baileys'
 
 const store = makeInMemoryStore({ maxMessagesPerChat: 1000 })
 store.readFromFile('./baileys_store.json')
