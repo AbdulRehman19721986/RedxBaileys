@@ -80,7 +80,7 @@ Now delegates directly to `fetchLatestWaWebVersion`, which queries the live What
 
 ### 6. npm Package Identity
 
-The fork is published separately as `@redxmini/redx-baileys`. It is not the upstream `@whiskeysockets/baileys` package; update your dependency name when switching to this fork.
+The fork is published separately as `@redxmini/redx-baileys`. It is not the upstream `@redxmini/redx-baileys` package; update your dependency name when switching to this fork.
 
 ---
 
