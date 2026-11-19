@@ -2,7 +2,7 @@
   "name": "@redxmini/redx-baileys",
   "type": "module",
   "version": "7.0.0-rc15",
-  "description": "A community-maintained fork of Baileys for WhatsApp Web automation, maintained by Abdul Rehman Rajpoot.",
+  "description": "A community-maintained fork of the Baileys WebSocket library for interacting with WhatsApp Web.",
   "keywords": [
     "whatsapp",
     "automation",
