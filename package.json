@@ -1,15 +1,20 @@
 {
-  "name": "baileys",
+  "name": "@redxmini/redx-baileys",
   "type": "module",
   "version": "7.0.0-rc15",
-  "description": "A WebSockets library for interacting with WhatsApp Web",
+  "description": "A community-maintained fork of Baileys for WhatsApp Web automation, maintained by Abdul Rehman Rajpoot.",
   "keywords": [
     "whatsapp",
-    "automation"
+    "automation",
+    "baileys",
+    "whatsapp-web",
+    "redx",
+    "redx-baileys"
   ],
-  "homepage": "https://github.com/WhiskeySockets/Baileys/",
+  "homepage": "https://github.com/AbdulRehman19721986/RedxBaileys#readme",
   "repository": {
-    "url": "git@github.com:WhiskeySockets/Baileys.git"
+    "type": "git",
+    "url": "https://github.com/AbdulRehman19721986/RedxBaileys.git"
   },
   "license": "MIT",
   "author": "Rajeh Taher",
@@ -137,5 +142,14 @@
   "packageManager": "yarn@4.9.2",
   "engines": {
     "node": ">=20.0.0"
+  },
+  "bugs": {
+    "url": "https://github.com/AbdulRehman19721986/RedxBaileys/issues"
+  },
+  "contributors": [
+    "Abdul Rehman Rajpoot"
+  ],
+  "publishConfig": {
+    "access": "public"
   }
 }
