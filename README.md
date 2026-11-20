@@ -80,7 +80,7 @@ Now delegates directly to `fetchLatestWaWebVersion`, which queries the live What
 
 ### 6. npm Package Identity
 
-`@redxmini/redx-baileys` is the independent npm package name for this fork. It is not the official upstream `@whiskeysockets/baileys` package. Update your dependency and import name when switching to this fork.
+`redxbailays-v1` is the independent npm package name for this fork. It is not the official upstream `@whiskeysockets/baileys` package. Update your dependency and import name when switching to this fork.
 
 ---
 
@@ -88,7 +88,7 @@ Now delegates directly to `fetchLatestWaWebVersion`, which queries the live What
 
 ### From npm (recommended)
 ```bash
-npm install @redxmini/redx-baileys
+npm install redxbailays-v1
 ```
 
 ### From GitHub
@@ -98,7 +98,7 @@ npm install github:AbdulRehman19721986/RedxBaileys
 
 ### In your `package.json`
 ```json
-"@redxmini/redx-baileys": "^7.0.0-rc16"
+"redxbailays-v1": "^7.0.0-rc16"
 ```
 
 ---
@@ -106,7 +106,7 @@ npm install github:AbdulRehman19721986/RedxBaileys
 ## Quick Start
 
 ```ts
-import makeWASocket, { Browsers, useMultiFileAuthState } from '@redxmini/redx-baileys'
+import makeWASocket, { Browsers, useMultiFileAuthState } from 'redxbailays-v1'
 
 const { state, saveCreds } = await useMultiFileAuthState('auth')
 
@@ -173,7 +173,7 @@ Group APIs include metadata, creation, participant updates, subject/description,
 The optional store collects chat, contact and message events, keeps a bounded message history per chat (1000 by default), supports message lookup for retry/decryption flows, and can read/write a JSON snapshot. It is not enabled automatically; bind it explicitly.
 
 ```ts
-import makeWASocket, { makeInMemoryStore, useMultiFileAuthState } from '@redxmini/redx-baileys'
+import makeWASocket, { makeInMemoryStore, useMultiFileAuthState } from 'redxbailays-v1'
 
 const store = makeInMemoryStore({ maxMessagesPerChat: 1000 })
 store.readFromFile('./baileys_store.json')
@@ -215,7 +215,7 @@ For large production histories, use a database-backed message store instead of k
 Example:
 
 ```ts
-import { checkStatusWA } from '@redxmini/redx-baileys'
+import { checkStatusWA } from 'redxbailays-v1'
 
 const result = await checkStatusWA('923001234567')
 console.log(result.status, result.isBanned)
