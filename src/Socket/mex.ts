@@ -96,7 +96,9 @@ const scalarText = (value: unknown): string | null => asText(value)?.trim() || n
  * It extracts tagged/attributed fields and embedded JSON. Opaque binary formats
  * without field boundaries cannot be safely guessed.
  */
-export const extractNewsletterMetadataFromBinaryNode = (node: BinaryNode | undefined): (Partial<NewsletterMetadata> & Pick<NewsletterMetadata, 'id'>) | null => {
+export const extractNewsletterMetadataFromBinaryNode = (
+	node: BinaryNode | undefined
+): (Partial<NewsletterMetadata> & Pick<NewsletterMetadata, 'id'>) | null => {
 	if (!node) return null
 	const fields: Record<string, string> = {}
 	const ids = new Set<string>()
@@ -151,9 +153,15 @@ export const extractNewsletterMetadataFromBinaryNode = (node: BinaryNode | undef
 	if (fields.description) metadata.description = fields.description
 	if (fields.invite) metadata.invite = fields.invite
 	if (fields.owner) metadata.owner = fields.owner
-	if (fields.creation_time && Number.isFinite(Number(fields.creation_time))) metadata.creation_time = Number(fields.creation_time)
-	if (fields.subscribers && Number.isFinite(Number(fields.subscribers))) metadata.subscribers = Number(fields.subscribers)
-	if (fields.verification === 'VERIFIED' || fields.verification === 'UNVERIFIED') metadata.verification = fields.verification
+	if (fields.creation_time && Number.isFinite(Number(fields.creation_time))) {
+		metadata.creation_time = Number(fields.creation_time)
+	}
+	if (fields.subscribers && Number.isFinite(Number(fields.subscribers))) {
+		metadata.subscribers = Number(fields.subscribers)
+	}
+	if (fields.verification === 'VERIFIED' || fields.verification === 'UNVERIFIED') {
+		metadata.verification = fields.verification
+	}
 	if (fields.picture_direct_path || fields.picture_id || fields.picture_media_key) {
 		metadata.picture = {
 			directPath: fields.picture_direct_path,
