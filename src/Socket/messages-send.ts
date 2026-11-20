@@ -1447,7 +1447,12 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 			if (!participant) {
 				throw new Boom('readStatus requires the status author JID as participant')
 			}
-			return readMessages([{ ...statusKey, participant, fromMe: false }])
+			// A status view must notify the status author. readMessages() applies
+			// the account's global read-receipts privacy setting and may downgrade
+			// this to "read-self", which does not mark the author's status as viewed.
+			// AutoStatus explicitly requests a view, so send the status-specific
+			// "read" receipt with the author as participant.
+			return sendReceipt('status@broadcast', participant, [statusKey.id], 'read')
 		},
 		/**
 		 * React to a received WhatsApp Status using the status author's JID as the
