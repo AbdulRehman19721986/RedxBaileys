@@ -1,8 +1,4 @@
-import type { NewsletterCreateResponse, SocketConfig, WAMediaUpload, WAMessage } from '../Types'
-import { createHash, randomBytes } from 'crypto'
-import { proto } from '../../WAProto/index.js'
-import { aesEncryptGCM, hmacSign } from '../Utils/crypto'
-import { jidNormalizedUser } from '../WABinary'
+import type { NewsletterCreateResponse, SocketConfig, WAMediaUpload } from '../Types'
 import type { NewsletterMetadata, NewsletterUpdate } from '../Types'
 import { QueryIds, XWAPaths } from '../Types'
 import { generateProfilePicture } from '../Utils/messages-media'
@@ -208,57 +204,32 @@ export const makeNewsletterSocket = (config: SocketConfig) => {
 		},
 
 		/**
-		 * Vote in a channel poll using the original decoded newsletter WAMessage.
-		 * Pass 1-based option indexes or exact option names. The original message
-		 * must come from the 'newsletter.message' event so its messageSecret is intact.
+		 * Submit a channel poll vote using SHA-256 hashes of the exact original optionName values.
+		 * Option hashes must be resolved from the decoded poll in the newsletter.message event.
 		 */
-		newsletterVote: async (jid: string, pollMessage: WAMessage, selections: Array<string | number> | string | number[]) => {
-			const message = pollMessage?.message
-			const poll = message?.pollCreationMessage || message?.pollCreationMessageV2 || message?.pollCreationMessageV3
-			if (!poll) throw new Error('Provided channel message is not a poll or has no decoded poll options.')
-
-			const rawSecret = pollMessage.messageContextInfo?.messageSecret
-			const secret = typeof rawSecret === 'string' ? Buffer.from(rawSecret, 'base64') : Buffer.from(rawSecret || [])
-			if (secret.length !== 32) throw new Error('Poll messageSecret missing/invalid. Capture the original newsletter.message event; history counters are not enough.')
-
-			const pollKey = pollMessage.key
-			if (!pollKey?.id) throw new Error('Poll creation message key/id is missing.')
-			const options = Array.isArray(poll.options) ? poll.options : []
-			if (!options.length) throw new Error('Poll has no selectable options.')
-
-			const requested = (Array.isArray(selections) ? selections : [selections]).filter(value => value !== null && value !== undefined)
-			const selected = new Map<string, { optionName: string }>()
-			for (const item of requested) {
-				if (typeof item === 'number' || /^\d+$/.test(String(item).trim())) {
-					const index = Number(item)
-					if (!Number.isSafeInteger(index) || index < 1 || index > options.length) throw new Error(`Poll option index ${item} is out of range (1-${options.length}).`)
-					const option = options[index - 1]!
-					selected.set(option.optionName || '', option)
-					continue
-				}
-				const wanted = String(item).normalize('NFC').trim().replace(/\s+/g, ' ').toLocaleLowerCase()
-				const option = options.find(candidate => String(candidate.optionName || '').normalize('NFC').trim().replace(/\s+/g, ' ').toLocaleLowerCase() === wanted)
-				if (!option) throw new Error(`Poll option not found: ${String(item)}. Available: ${options.map(option => option.optionName).join(' | ')}`)
-				selected.set(option.optionName || '', option)
+		newsletterVotePoll: async (jid: string, serverId: string, optionHashes: Uint8Array[]) => {
+			if (!jid?.endsWith('@newsletter')) throw new Error('A valid newsletter JID is required.')
+			if (!/^\d+$/.test(String(serverId))) throw new Error('A valid channel post server ID is required.')
+			if (!Array.isArray(optionHashes) || !optionHashes.length) throw new Error('At least one poll option hash is required.')
+			for (const hash of optionHashes) {
+				if (!(hash instanceof Uint8Array) || hash.byteLength !== 32) throw new Error('Each poll option must be a 32-byte SHA-256 hash.')
 			}
-			if (!selected.size) throw new Error('Select at least one poll option.')
-			const max = Number(poll.selectableOptionsCount || 1)
-			if (selected.size > max) throw new Error(`This poll allows only ${max} selection(s).`)
 
-			const socketUser = sock.user as any
-			const voter = jidNormalizedUser(socketUser?.id || socketUser?.lid || '')
-			if (!voter) throw new Error('Connected account JID is unavailable.')
-			const creator = jidNormalizedUser(pollKey.participant || pollKey.remoteJid || jid)
-			const sign = Buffer.concat([Buffer.from(pollKey.id), Buffer.from(creator), Buffer.from(voter), Buffer.from('Poll Vote'), Buffer.from([1])])
-			const key0 = hmacSign(secret, Buffer.alloc(32), 'sha256')
-			const encryptionKey = hmacSign(sign, key0, 'sha256')
-			const aad = Buffer.from(pollKey.id + String.fromCharCode(0) + voter)
-			const selectedOptions = [...selected.values()].map(option => createHash('sha256').update(Buffer.from(option.optionName || '', 'utf8')).digest())
-			const voteBytes = proto.Message.PollVoteMessage.encode({ selectedOptions }).finish()
-			const iv = randomBytes(12)
-			const vote = { encPayload: aesEncryptGCM(voteBytes, encryptionKey, iv, aad), encIv: iv }
-			await sock.sendMessage(jid, { pollUpdateMessage: { pollCreationMessageKey: pollKey, vote, senderTimestampMs: Date.now() } } as any)
-			return { ok: true, votedFor: [...selected.keys()] }
+			const messageTag = generateMessageTag()
+			const ack = await query({
+				tag: 'message',
+				attrs: { to: jid, type: 'poll', server_id: String(serverId), id: messageTag },
+				content: [
+					{ tag: 'meta', attrs: { polltype: 'vote' } },
+					{ tag: 'votes', attrs: {}, content: optionHashes.map(hash => ({ tag: 'vote', attrs: {}, content: Buffer.from(hash) })) }
+				]
+			}, 15000)
+
+			if (ack?.attrs?.error) throw new Error('WhatsApp rejected channel poll vote: ' + String(ack.attrs.error))
+			if (ack?.tag !== 'ack' || ack.attrs?.id !== messageTag || ack.attrs?.class !== 'message') {
+				throw new Error('Unexpected WhatsApp acknowledgement; channel poll vote is unconfirmed.')
+			}
+			return { ok: true, serverId: String(serverId), optionCount: optionHashes.length }
 		},
 
 		newsletterReactMessage: async (jid: string, serverId: string, reaction?: string) => {
