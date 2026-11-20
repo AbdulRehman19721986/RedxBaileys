@@ -531,7 +531,7 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 							// Expose the decoded original post separately: newsletterFetchMessages
 							// history responses may contain counters but omit the plaintext poll.
 							ev.emit('newsletter.message', { id: from, server_id: serverId, message: fullMessage })
-							logger.debug({ serverId, hasPoll: !!(fullMessage.message?.pollCreationMessage || fullMessage.message?.pollCreationMessageV2 || fullMessage.message?.pollCreationMessageV3), hasSecret: !!fullMessage.messageContextInfo?.messageSecret }, 'Processed plaintext newsletter message')
+							logger.debug({ serverId, hasPoll: !!(fullMessage.message?.pollCreationMessage || fullMessage.message?.pollCreationMessageV2 || fullMessage.message?.pollCreationMessageV3), hasSecret: !!fullMessage.message?.messageContextInfo?.messageSecret }, 'Processed plaintext newsletter message')
 						} catch (error) {
 							logger.error({ error }, 'Failed to decode plaintext newsletter message')
 						}
