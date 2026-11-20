@@ -112,10 +112,10 @@ export const extractNewsletterMetadataFromBinaryNode = (node: BinaryNode | undef
 		}
 		if (mapped && !fields[mapped]) fields[mapped] = text
 	}
-	const walkJson = (value: unknown, parentKey = '') => {
+	const walkJson = (value: unknown) => {
 		if (!value || typeof value !== 'object') return
 		if (Array.isArray(value)) {
-			for (const item of value) walkJson(item, parentKey)
+			for (const item of value) walkJson(item)
 			return
 		}
 		for (const [key, item] of Object.entries(value as Record<string, unknown>)) {
@@ -123,17 +123,17 @@ export const extractNewsletterMetadataFromBinaryNode = (node: BinaryNode | undef
 			else {
 				const nested = item as Record<string, unknown> | null
 				if (nested && typeof nested.text === 'string') capture(key, nested.text)
-				walkJson(item, key)
+				walkJson(item)
 			}
 		}
 	}
-	const visit = (current: BinaryNode | undefined, depth = 0) => {
+	const visit = (current: BinaryNode | undefined, depth = 0, parentTag = '') => {
 		if (!current || depth > 10) return
 		capture(current.tag, current.content)
 		if (current.tag.toLowerCase() === 'text' && parentTag) capture(parentTag, current.content)
 		for (const [key, value] of Object.entries(current.attrs || {})) capture(key, value)
 		if (Array.isArray(current.content)) {
-			for (const child of current.content) visit(child, depth + 1)
+			for (const child of current.content) visit(child, depth + 1, current.tag)
 		} else {
 			const raw = scalarText(current.content)
 			if (raw) {
