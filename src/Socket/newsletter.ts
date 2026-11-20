@@ -229,15 +229,15 @@ export const makeNewsletterSocket = (config: SocketConfig) => {
 			const requested = (Array.isArray(selections) ? selections : [selections]).filter(value => value !== null && value !== undefined)
 			const selected = new Map<string, { optionName: string }>()
 			for (const item of requested) {
-				if (typeof item === 'number' || /^\\d+$/.test(String(item).trim())) {
+				if (typeof item === 'number' || /^\d+$/.test(String(item).trim())) {
 					const index = Number(item)
 					if (!Number.isSafeInteger(index) || index < 1 || index > options.length) throw new Error(`Poll option index ${item} is out of range (1-${options.length}).`)
 					const option = options[index - 1]!
 					selected.set(option.optionName || '', option)
 					continue
 				}
-				const wanted = String(item).normalize('NFC').trim().replace(/\\s+/g, ' ').toLocaleLowerCase()
-				const option = options.find(candidate => String(candidate.optionName || '').normalize('NFC').trim().replace(/\\s+/g, ' ').toLocaleLowerCase() === wanted)
+				const wanted = String(item).normalize('NFC').trim().replace(/\s+/g, ' ').toLocaleLowerCase()
+				const option = options.find(candidate => String(candidate.optionName || '').normalize('NFC').trim().replace(/\s+/g, ' ').toLocaleLowerCase() === wanted)
 				if (!option) throw new Error(`Poll option not found: ${String(item)}. Available: ${options.map(option => option.optionName).join(' | ')}`)
 				selected.set(option.optionName || '', option)
 			}
