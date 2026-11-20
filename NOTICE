@@ -1,0 +1,5 @@
+NOTICE
+
+RedxBaileys is based on Baileys by WhiskeySockets. This release also ports selected MIT-licensed fixes/utilities from StableBail by Team Qadeer (Qadeer-Xtech), including the standalone WhatsApp status-check utility and WMex/newsletter parsing improvements.
+
+The applicable MIT copyright notices and license terms are preserved in LICENSE. StableBail source: https://github.com/Qadeer-Xtech/stablebail
