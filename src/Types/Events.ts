@@ -113,6 +113,8 @@ export type BaileysEventMap = {
 	'labels.association': { association: LabelAssociation; type: 'add' | 'remove' }
 
 	/** Newsletter-related events */
+	/** Fully decoded plaintext channel post, including poll options and messageSecret when present. */
+	'newsletter.message': { id: string; server_id: string; message: WAMessage }
 	'newsletter.reaction': {
 		id: string
 		server_id: string
