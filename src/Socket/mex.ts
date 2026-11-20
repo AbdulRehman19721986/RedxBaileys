@@ -66,11 +66,11 @@ export const extractNewsletterJidFromBinaryNode = (node: BinaryNode | undefined)
 			candidates.add(match[1] + '@newsletter')
 		}
 	}
-	const visit = (current: BinaryNode | undefined, depth = 0, parentTag = '') => {
+	const visit = (current: BinaryNode | undefined, depth = 0) => {
 		if (!current || depth > 10) return
 		for (const value of Object.values(current.attrs || {})) scan(value)
 		if (Array.isArray(current.content)) {
-			for (const child of current.content) visit(child, depth + 1, current.tag)
+			for (const child of current.content) visit(child, depth + 1)
 		} else {
 			scan(current.content)
 		}
