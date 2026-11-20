@@ -1,4 +1,9 @@
-import { executeWMexQuery, extractNewsletterJidFromBinaryNode } from '../../Socket/mex'
+import {
+	executeWMexQuery,
+	extractNewsletterJidFromBinaryNode,
+	extractNewsletterMetadataFromBinaryNode,
+	parseWMexJson
+} from '../../Socket/mex'
 import type { BinaryNode } from '../../WABinary'
 
 describe('WMex newsletter metadata response handling', () => {
@@ -57,6 +62,33 @@ describe('WMex newsletter metadata response handling', () => {
 		)
 
 		expect(metadata).toEqual({ id: '120363431765097100@newsletter' })
+	})
+
+	it('extracts structured channel metadata from binary node fields', () => {
+		const node: BinaryNode = {
+			tag: 'result',
+			attrs: { id: '120363431765097100@newsletter' },
+			content: [
+				{ tag: 'name', attrs: {}, content: 'REDX Channel' },
+				{ tag: 'description', attrs: {}, content: 'Official channel description' },
+				{ tag: 'subscribers_count', attrs: {}, content: '1250' },
+				{ tag: 'picture', attrs: { direct_path: '/v/t62.7118-24/example', id: 'picture-1' } }
+			]
+		}
+		expect(extractNewsletterMetadataFromBinaryNode(node)).toMatchObject({
+			id: '120363431765097100@newsletter',
+			name: 'REDX Channel',
+			description: 'Official channel description',
+			subscribers: 1250,
+			picture: { directPath: '/v/t62.7118-24/example', id: 'picture-1' }
+		})
+	})
+
+	it('parses JSON after a binary prefix and accepts array-wrapped objects', () => {
+		expect(parseWMexJson(Buffer.from([0xff, 0x00, ...Buffer.from('{"data":{"ok":true}}')]))).toEqual({
+			data: { ok: true }
+		})
+		expect(parseWMexJson(Buffer.from('[{"data":{"ok":true}}]'))).toEqual({ data: { ok: true } })
 	})
 
 	it('rejects malformed binary responses for unrelated WMex queries', async () => {

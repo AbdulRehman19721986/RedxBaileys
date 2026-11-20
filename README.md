@@ -4,7 +4,7 @@
 
 <div align="center">
 
-# RedxBaileys — v7.0.0-rc15
+# RedxBaileys — v7.0.0-rc16
 
 **Fork of [@WhiskeySockets/Baileys](https://github.com/WhiskeySockets/Baileys) — patched for WhatsApp November 2026 compatibility.**
 
@@ -21,7 +21,7 @@ It fixes all breaking issues introduced by WhatsApp's **November 2026** protocol
 
 ---
 
-## ✅ Fixes in v7.0.0-rc15
+## ✅ Fixes in v7.0.0-rc16
 
 ### 1. `Platform.WEB` → `Platform.MACOS` (Critical)
 **File:** `src/Utils/validate-connection.ts`
@@ -80,7 +80,7 @@ Now delegates directly to `fetchLatestWaWebVersion`, which queries the live What
 
 ### 6. npm Package Identity
 
-`@redxmini/redx-baileys` is the independent npm package name for this fork. It is not the official upstream `@whiskeysockets/baileys` package. Update your dependency and import name when switching to this fork.
+`redxbailays-v1` is the independent npm package name for this fork. It is not the official upstream `@whiskeysockets/baileys` package. Update your dependency and import name when switching to this fork.
 
 ---
 
@@ -88,7 +88,7 @@ Now delegates directly to `fetchLatestWaWebVersion`, which queries the live What
 
 ### From npm (recommended)
 ```bash
-npm install @redxmini/redx-baileys
+npm install redxbailays-v1
 ```
 
 ### From GitHub
@@ -98,7 +98,7 @@ npm install github:AbdulRehman19721986/RedxBaileys
 
 ### In your `package.json`
 ```json
-"@redxmini/redx-baileys": "^7.0.0-rc15"
+"redxbailays-v1": "^7.0.0-rc16"
 ```
 
 ---
@@ -106,7 +106,7 @@ npm install github:AbdulRehman19721986/RedxBaileys
 ## Quick Start
 
 ```ts
-import makeWASocket, { Browsers, useMultiFileAuthState } from '@redxmini/redx-baileys'
+import makeWASocket, { Browsers, useMultiFileAuthState } from 'redxbailays-v1'
 
 const { state, saveCreds } = await useMultiFileAuthState('auth')
 
@@ -132,7 +132,7 @@ Use responsibly and in accordance with WhatsApp's Terms of Service.
 
 <div align="center">
 
-**RedxBaileys v7.0.0-rc15** — Maintained by Abdul Rehman Rajpoot  
+**RedxBaileys v7.0.0-rc16** — Maintained by Abdul Rehman Rajpoot  
 Based on [WhiskeySockets/Baileys](https://github.com/WhiskeySockets/Baileys)
 
 </div>
@@ -173,7 +173,7 @@ Group APIs include metadata, creation, participant updates, subject/description,
 The optional store collects chat, contact and message events, keeps a bounded message history per chat (1000 by default), supports message lookup for retry/decryption flows, and can read/write a JSON snapshot. It is not enabled automatically; bind it explicitly.
 
 ```ts
-import makeWASocket, { makeInMemoryStore, useMultiFileAuthState } from '@redxmini/redx-baileys'
+import makeWASocket, { makeInMemoryStore, useMultiFileAuthState } from 'redxbailays-v1'
 
 const store = makeInMemoryStore({ maxMessagesPerChat: 1000 })
 store.readFromFile('./baileys_store.json')
@@ -204,3 +204,19 @@ const saveStore = () => {
 ```
 
 For large production histories, use a database-backed message store instead of keeping unbounded history in process memory. The built-in store is intentionally bounded and optional.
+
+
+## StableBail-compatible additions in rc16
+
+- `checkStatusWA(number, options?)` provides a best-effort registration status signal (`active`, `banned`, `blocked`, `rate_limited`, or `error`) without connecting your bot account. WhatsApp may rate-limit or change this undocumented endpoint; it is not an official ban-verification API.
+- WMex responses are parsed more defensively, including JSON embedded after binary prefixes.
+- Newsletter metadata can be recovered from structured binary-node fields when the server returns a binary response. Opaque payloads with no decodable field boundaries fall back to channel-ID recovery rather than fabricated metadata.
+
+Example:
+
+```ts
+import { checkStatusWA } from 'redxbailays-v1'
+
+const result = await checkStatusWA('923001234567')
+console.log(result.status, result.isBanned)
+```
