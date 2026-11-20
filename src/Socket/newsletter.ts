@@ -170,8 +170,23 @@ export const makeNewsletterSocket = (config: SocketConfig) => {
 		newsletterMetadata,
 		newsletterJidFromInvite,
 
-		newsletterFollow: (jid: string) => {
-			return executeWMexQuery({ newsletter_id: jid }, QueryIds.FOLLOW, XWAPaths.xwa2_newsletter_join_v2)
+		newsletterFollow: async (jid: string) => {
+			const result = await executeWMexQuery({ newsletter_id: jid }, QueryIds.FOLLOW, XWAPaths.xwa2_newsletter_join_v2)
+
+			// Following a newsletter and subscribing to its live updates are separate
+			// operations. Subscribe immediately so plaintext post notifications (including
+			// pollCreationMessage + messageSecret) can reach the newsletter event pipeline.
+			await query({
+				tag: 'iq',
+				attrs: {
+					id: generateMessageTag(),
+					type: 'set',
+					xmlns: 'newsletter',
+					to: jid
+				},
+				content: [{ tag: 'live_updates', attrs: {}, content: [] }]
+			})
+			return result
 		},
 
 		newsletterUnfollow: (jid: string) => {
