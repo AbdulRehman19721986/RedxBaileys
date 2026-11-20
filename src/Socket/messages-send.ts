@@ -1464,7 +1464,7 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 			if (typeof emoji !== 'string' || !emoji.trim()) {
 				throw new Boom('reactToStatus requires a non-empty emoji')
 			}
-			const messageId = generateMessageIDV2(authState.creds.me?.id)
+			const messageId = generateMessageIDV2(assertMeId(authState.creds))
 			return relayMessage('status@broadcast', {
 				reactionMessage: {
 					key: {
