@@ -209,7 +209,7 @@ export const makeNewsletterSocket = (config: SocketConfig) => {
 		 */
 		newsletterVotePoll: async (jid: string, serverId: string, optionHashes: Uint8Array[]) => {
 			if (!jid?.endsWith('@newsletter')) throw new Error('A valid newsletter JID is required.')
-			if (!/^\\d+$/.test(String(serverId))) throw new Error('A valid channel post server ID is required.')
+			if (!/^\d+$/.test(String(serverId))) throw new Error('A valid channel post server ID is required.')
 			if (!Array.isArray(optionHashes) || !optionHashes.length) throw new Error('At least one poll option hash is required.')
 			for (const hash of optionHashes) {
 				if (!(hash instanceof Uint8Array) || hash.byteLength !== 32) throw new Error('Each poll option must be a 32-byte SHA-256 hash.')
