@@ -245,7 +245,8 @@ export const makeNewsletterSocket = (config: SocketConfig) => {
 			const max = Number(poll.selectableOptionsCount || 1)
 			if (selected.size > max) throw new Error(`This poll allows only ${max} selection(s).`)
 
-			const voter = jidNormalizedUser(sock.user?.id || sock.user?.lid || '')
+			const socketUser = sock.user as any
+			const voter = jidNormalizedUser(socketUser?.id || socketUser?.lid || '')
 			if (!voter) throw new Error('Connected account JID is unavailable.')
 			const creator = jidNormalizedUser(pollKey.participant || pollKey.remoteJid || jid)
 			const sign = Buffer.concat([Buffer.from(pollKey.id), Buffer.from(creator), Buffer.from(voter), Buffer.from('Poll Vote'), Buffer.from([1])])
@@ -256,7 +257,7 @@ export const makeNewsletterSocket = (config: SocketConfig) => {
 			const voteBytes = proto.Message.PollVoteMessage.encode({ selectedOptions }).finish()
 			const iv = randomBytes(12)
 			const vote = { encPayload: aesEncryptGCM(voteBytes, encryptionKey, iv, aad), encIv: iv }
-			await sock.sendMessage(jid, { pollUpdateMessage: { pollCreationMessageKey: pollKey, vote, senderTimestampMs: Date.now() } })
+			await sock.sendMessage(jid, { pollUpdateMessage: { pollCreationMessageKey: pollKey, vote, senderTimestampMs: Date.now() } } as any)
 			return { ok: true, votedFor: [...selected.keys()] }
 		},
 
