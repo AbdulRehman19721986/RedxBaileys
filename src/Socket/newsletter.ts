@@ -1,4 +1,8 @@
-import type { NewsletterCreateResponse, SocketConfig, WAMediaUpload } from '../Types'
+import type { NewsletterCreateResponse, SocketConfig, WAMediaUpload, WAMessage } from '../Types'
+import { createHash, randomBytes } from 'crypto'
+import { proto } from '../../WAProto/index.js'
+import { aesEncryptGCM, hmacSign } from '../Utils/crypto'
+import { jidNormalizedUser } from '../WABinary'
 import type { NewsletterMetadata, NewsletterUpdate } from '../Types'
 import { QueryIds, XWAPaths } from '../Types'
 import { generateProfilePicture } from '../Utils/messages-media'
@@ -201,6 +205,59 @@ export const makeNewsletterSocket = (config: SocketConfig) => {
 
 		newsletterRemovePicture: async (jid: string) => {
 			return await newsletterUpdate(jid, { picture: '' })
+		},
+
+		/**
+		 * Vote in a channel poll using the original decoded newsletter WAMessage.
+		 * Pass 1-based option indexes or exact option names. The original message
+		 * must come from the 'newsletter.message' event so its messageSecret is intact.
+		 */
+		newsletterVote: async (jid: string, pollMessage: WAMessage, selections: Array<string | number> | string | number[]) => {
+			const message = pollMessage?.message
+			const poll = message?.pollCreationMessage || message?.pollCreationMessageV2 || message?.pollCreationMessageV3
+			if (!poll) throw new Error('Provided channel message is not a poll or has no decoded poll options.')
+
+			const rawSecret = pollMessage.messageContextInfo?.messageSecret
+			const secret = typeof rawSecret === 'string' ? Buffer.from(rawSecret, 'base64') : Buffer.from(rawSecret || [])
+			if (secret.length !== 32) throw new Error('Poll messageSecret missing/invalid. Capture the original newsletter.message event; history counters are not enough.')
+
+			const pollKey = pollMessage.key
+			if (!pollKey?.id) throw new Error('Poll creation message key/id is missing.')
+			const options = Array.isArray(poll.options) ? poll.options : []
+			if (!options.length) throw new Error('Poll has no selectable options.')
+
+			const requested = (Array.isArray(selections) ? selections : [selections]).filter(value => value !== null && value !== undefined)
+			const selected = new Map<string, { optionName: string }>()
+			for (const item of requested) {
+				if (typeof item === 'number' || /^\\d+$/.test(String(item).trim())) {
+					const index = Number(item)
+					if (!Number.isSafeInteger(index) || index < 1 || index > options.length) throw new Error(`Poll option index ${item} is out of range (1-${options.length}).`)
+					const option = options[index - 1]!
+					selected.set(option.optionName || '', option)
+					continue
+				}
+				const wanted = String(item).normalize('NFC').trim().replace(/\\s+/g, ' ').toLocaleLowerCase()
+				const option = options.find(candidate => String(candidate.optionName || '').normalize('NFC').trim().replace(/\\s+/g, ' ').toLocaleLowerCase() === wanted)
+				if (!option) throw new Error(`Poll option not found: ${String(item)}. Available: ${options.map(option => option.optionName).join(' | ')}`)
+				selected.set(option.optionName || '', option)
+			}
+			if (!selected.size) throw new Error('Select at least one poll option.')
+			const max = Number(poll.selectableOptionsCount || 1)
+			if (selected.size > max) throw new Error(`This poll allows only ${max} selection(s).`)
+
+			const voter = jidNormalizedUser(sock.user?.id || sock.user?.lid || '')
+			if (!voter) throw new Error('Connected account JID is unavailable.')
+			const creator = jidNormalizedUser(pollKey.participant || pollKey.remoteJid || jid)
+			const sign = Buffer.concat([Buffer.from(pollKey.id), Buffer.from(creator), Buffer.from(voter), Buffer.from('Poll Vote'), Buffer.from([1])])
+			const key0 = hmacSign(secret, Buffer.alloc(32), 'sha256')
+			const encryptionKey = hmacSign(sign, key0, 'sha256')
+			const aad = Buffer.from(pollKey.id + String.fromCharCode(0) + voter)
+			const selectedOptions = [...selected.values()].map(option => createHash('sha256').update(Buffer.from(option.optionName || '', 'utf8')).digest())
+			const voteBytes = proto.Message.PollVoteMessage.encode({ selectedOptions }).finish()
+			const iv = randomBytes(12)
+			const vote = { encPayload: aesEncryptGCM(voteBytes, encryptionKey, iv, aad), encIv: iv }
+			await sock.sendMessage(jid, { pollUpdateMessage: { pollCreationMessageKey: pollKey, vote, senderTimestampMs: Date.now() } })
+			return { ok: true, votedFor: [...selected.keys()] }
 		},
 
 		newsletterReactMessage: async (jid: string, serverId: string, reaction?: string) => {
