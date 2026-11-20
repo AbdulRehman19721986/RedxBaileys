@@ -4,7 +4,7 @@
 
 <div align="center">
 
-# RedxBaileys — v7.0.0-rc15
+# RedxBaileys — v7.0.0-rc16
 
 **Fork of [@WhiskeySockets/Baileys](https://github.com/WhiskeySockets/Baileys) — patched for WhatsApp November 2026 compatibility.**
 
@@ -21,7 +21,7 @@ It fixes all breaking issues introduced by WhatsApp's **November 2026** protocol
 
 ---
 
-## ✅ Fixes in v7.0.0-rc15
+## ✅ Fixes in v7.0.0-rc16
 
 ### 1. `Platform.WEB` → `Platform.MACOS` (Critical)
 **File:** `src/Utils/validate-connection.ts`
@@ -98,7 +98,7 @@ npm install github:AbdulRehman19721986/RedxBaileys
 
 ### In your `package.json`
 ```json
-"@redxmini/redx-baileys": "^7.0.0-rc15"
+"@redxmini/redx-baileys": "^7.0.0-rc16"
 ```
 
 ---
@@ -132,7 +132,7 @@ Use responsibly and in accordance with WhatsApp's Terms of Service.
 
 <div align="center">
 
-**RedxBaileys v7.0.0-rc15** — Maintained by Abdul Rehman Rajpoot  
+**RedxBaileys v7.0.0-rc16** — Maintained by Abdul Rehman Rajpoot  
 Based on [WhiskeySockets/Baileys](https://github.com/WhiskeySockets/Baileys)
 
 </div>
@@ -204,3 +204,19 @@ const saveStore = () => {
 ```
 
 For large production histories, use a database-backed message store instead of keeping unbounded history in process memory. The built-in store is intentionally bounded and optional.
+
+
+## StableBail-compatible additions in rc16
+
+- `checkStatusWA(number, options?)` provides a best-effort registration status signal (`active`, `banned`, `blocked`, `rate_limited`, or `error`) without connecting your bot account. WhatsApp may rate-limit or change this undocumented endpoint; it is not an official ban-verification API.
+- WMex responses are parsed more defensively, including JSON embedded after binary prefixes.
+- Newsletter metadata can be recovered from structured binary-node fields when the server returns a binary response. Opaque payloads with no decodable field boundaries fall back to channel-ID recovery rather than fabricated metadata.
+
+Example:
+
+```ts
+import { checkStatusWA } from '@redxmini/redx-baileys'
+
+const result = await checkStatusWA('923001234567')
+console.log(result.status, result.isBanned)
+```
