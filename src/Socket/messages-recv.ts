@@ -526,8 +526,12 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 								message: messageProto,
 								messageTimestamp: +child.attrs.t!
 							}).toJSON() as WAMessage
+							const serverId = String(child.attrs.server_id || child.attrs.message_id || fullMessage.key.id || '')
 							await upsertMessage(fullMessage, 'append')
-							logger.debug('Processed plaintext newsletter message')
+							// Expose the decoded original post separately: newsletterFetchMessages
+							// history responses may contain counters but omit the plaintext poll.
+							ev.emit('newsletter.message', { id: from, server_id: serverId, message: fullMessage })
+							logger.debug({ serverId, hasPoll: !!(fullMessage.message?.pollCreationMessage || fullMessage.message?.pollCreationMessageV2 || fullMessage.message?.pollCreationMessageV3), hasSecret: !!fullMessage.messageContextInfo?.messageSecret }, 'Processed plaintext newsletter message')
 						} catch (error) {
 							logger.error({ error }, 'Failed to decode plaintext newsletter message')
 						}
