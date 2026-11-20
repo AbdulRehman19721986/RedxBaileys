@@ -1,4 +1,9 @@
-import { executeWMexQuery, extractNewsletterJidFromBinaryNode, extractNewsletterMetadataFromBinaryNode, parseWMexJson } from '../../Socket/mex'
+import {
+	executeWMexQuery,
+	extractNewsletterJidFromBinaryNode,
+	extractNewsletterMetadataFromBinaryNode,
+	parseWMexJson
+} from '../../Socket/mex'
 import type { BinaryNode } from '../../WABinary'
 
 describe('WMex newsletter metadata response handling', () => {
