@@ -66,11 +66,11 @@ export const extractNewsletterJidFromBinaryNode = (node: BinaryNode | undefined)
 			candidates.add(match[1] + '@newsletter')
 		}
 	}
-	const visit = (current: BinaryNode | undefined, depth = 0) => {
+	const visit = (current: BinaryNode | undefined, depth = 0, parentTag = '') => {
 		if (!current || depth > 10) return
 		for (const value of Object.values(current.attrs || {})) scan(value)
 		if (Array.isArray(current.content)) {
-			for (const child of current.content) visit(child, depth + 1)
+			for (const child of current.content) visit(child, depth + 1, current.tag)
 		} else {
 			scan(current.content)
 		}
@@ -96,7 +96,7 @@ const scalarText = (value: unknown): string | null => asText(value)?.trim() || n
  * It extracts tagged/attributed fields and embedded JSON. Opaque binary formats
  * without field boundaries cannot be safely guessed.
  */
-export const extractNewsletterMetadataFromBinaryNode = (node: BinaryNode | undefined): NewsletterMetadata | null => {
+export const extractNewsletterMetadataFromBinaryNode = (node: BinaryNode | undefined): (Partial<NewsletterMetadata> & Pick<NewsletterMetadata, 'id'>) | null => {
 	if (!node) return null
 	const fields: Record<string, string> = {}
 	const ids = new Set<string>()
@@ -112,20 +112,25 @@ export const extractNewsletterMetadataFromBinaryNode = (node: BinaryNode | undef
 		}
 		if (mapped && !fields[mapped]) fields[mapped] = text
 	}
-	const walkJson = (value: unknown) => {
+	const walkJson = (value: unknown, parentKey = '') => {
 		if (!value || typeof value !== 'object') return
 		if (Array.isArray(value)) {
-			for (const item of value) walkJson(item)
+			for (const item of value) walkJson(item, parentKey)
 			return
 		}
 		for (const [key, item] of Object.entries(value as Record<string, unknown>)) {
 			if (typeof item === 'string' || typeof item === 'number') capture(key, item)
-			else walkJson(item)
+			else {
+				const nested = item as Record<string, unknown> | null
+				if (nested && typeof nested.text === 'string') capture(key, nested.text)
+				walkJson(item, key)
+			}
 		}
 	}
 	const visit = (current: BinaryNode | undefined, depth = 0) => {
 		if (!current || depth > 10) return
 		capture(current.tag, current.content)
+		if (current.tag.toLowerCase() === 'text' && parentTag) capture(parentTag, current.content)
 		for (const [key, value] of Object.entries(current.attrs || {})) capture(key, value)
 		if (Array.isArray(current.content)) {
 			for (const child of current.content) visit(child, depth + 1)
@@ -141,7 +146,7 @@ export const extractNewsletterMetadataFromBinaryNode = (node: BinaryNode | undef
 	const recoveredId = extractNewsletterJidFromBinaryNode(node)
 	if (recoveredId) ids.add(recoveredId)
 	if (ids.size !== 1) return null
-	const metadata: NewsletterMetadata = { id: [...ids][0]! }
+	const metadata: Partial<NewsletterMetadata> & Pick<NewsletterMetadata, 'id'> = { id: [...ids][0]! }
 	if (fields.name) metadata.name = fields.name
 	if (fields.description) metadata.description = fields.description
 	if (fields.invite) metadata.invite = fields.invite
