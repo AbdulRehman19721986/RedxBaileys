@@ -1435,6 +1435,52 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 	return {
 		...messageSocket,
 		/**
+		 * Mark a received WhatsApp Status as viewed.
+		 * Status receipts must retain the status author as participant; without it,
+		 * WhatsApp may reject or silently ignore the read receipt.
+		 */
+		readStatus: async (statusKey: WAMessageKey, authorJid?: string) => {
+			if (statusKey?.remoteJid !== 'status@broadcast' || !statusKey.id) {
+				throw new Boom('readStatus requires a valid status@broadcast message key')
+			}
+			const participant = authorJid || statusKey.participant || statusKey.participantAlt
+			if (!participant) {
+				throw new Boom('readStatus requires the status author JID as participant')
+			}
+			return readMessages([{ ...statusKey, participant, fromMe: false }])
+		},
+		/**
+		 * React to a received WhatsApp Status using the status author's JID as the
+		 * sole status recipient. The reaction message gets its own message ID.
+		 */
+		reactToStatus: async (statusKey: WAMessageKey, emoji: string, authorJid?: string) => {
+			if (statusKey?.remoteJid !== 'status@broadcast' || !statusKey.id) {
+				throw new Boom('reactToStatus requires a valid status@broadcast message key')
+			}
+			const participant = authorJid || statusKey.participant || statusKey.participantAlt
+			if (!participant) {
+				throw new Boom('reactToStatus requires the status author JID as participant')
+			}
+			if (typeof emoji !== 'string' || !emoji.trim()) {
+				throw new Boom('reactToStatus requires a non-empty emoji')
+			}
+			const messageId = generateMessageIDV2(assertMeId(authState.creds))
+			return relayMessage('status@broadcast', {
+				reactionMessage: {
+					key: {
+						remoteJid: 'status@broadcast',
+						id: statusKey.id,
+						participant,
+						fromMe: false
+					},
+					text: emoji.trim()
+				}
+			}, {
+				messageId,
+				statusJidList: [participant]
+			})
+		},
+		/**
 		 * Publish a text, image, or video update to the account's WhatsApp Status.
 		 * Uses the same media upload, encryption and retry path as sendMessage.
 		 */
