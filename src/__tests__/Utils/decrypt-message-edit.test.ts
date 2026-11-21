@@ -301,4 +301,74 @@ describe('encrypted WhatsApp MESSAGE_EDIT', () => {
 		}>
 		expect(update?.[0]?.update.message?.editedMessage?.message?.conversation).toBe(editText)
 	})
+	it('hydrates missing original target author fields from getMessage before decrypting an external edit', async () => {
+		const meId = '999999999@s.whatsapp.net'
+		const editor = '123450099:7@s.whatsapp.net'
+		const editorUser = jidNormalizedUser(editor)
+		const editText = 'External member edit with incomplete target key'
+		const editPlaintext = proto.Message.encode({
+			protocolMessage: {
+				type: proto.Message.ProtocolMessage.Type.MESSAGE_EDIT,
+				key: { id: originalId, fromMe: true },
+				editedMessage: { conversation: editText },
+				timestampMs: 1700000003000
+			}
+		}).finish()
+		const info = Buffer.concat([
+			Buffer.from(originalId),
+			Buffer.from(jidNormalizedUser(meId)),
+			Buffer.from(editorUser),
+			Buffer.from('Message Edit'),
+			new Uint8Array([1])
+		])
+		const derived = createHmacKey(info, createHmacKey(secret))
+		const editCipher = createCipheriv('aes-256-gcm', derived, iv)
+		const payload = Buffer.concat([editCipher.update(editPlaintext), editCipher.final(), editCipher.getAuthTag()])
+		const envelope: WAMessage = {
+			key: { remoteJid: groupJid, fromMe: false, id: 'incomplete-target-edit', participant: editor, participantAlt: editor },
+			message: {
+				secretEncryptedMessage: {
+					secretEncType: proto.Message.SecretEncryptedMessage.SecretEncType.MESSAGE_EDIT,
+					targetMessageKey: { remoteJid: groupJid, id: originalId },
+					encIv: iv,
+					encPayload: payload
+				}
+			},
+			messageTimestamp: 1700000003,
+			pushName: 'External Member'
+		}
+		const events: Array<{ name: string; payload: unknown }> = []
+		const context = {
+			shouldProcessHistoryMsg: false,
+			creds: { me: { id: meId, lid: '999999999@lid' } },
+			keyStore: {},
+			ev: {
+				emit: (name: string, value: unknown) => {
+					events.push({ name, payload: value })
+					return true
+				}
+			},
+			options: {},
+			signalRepository: {},
+			getMessage: async (key: WAMessage['key']) => {
+				// Mirrors the bot's authoritative original-message cache hydration.
+				key.fromMe = true
+				key.participant = undefined
+				key.participantAlt = undefined
+				return { messageContextInfo: { messageSecret: secret }, conversation: 'Original bot message' }
+			}
+		} as unknown as Parameters<typeof processMessage>[1]
+
+		await processMessage(envelope, context)
+		const update = events.find(event => event.name === 'messages.update')?.payload as Array<{
+			key: WAMessage['key']
+			update: { message?: proto.IMessage }
+		}>
+		expect(update).toHaveLength(1)
+		expect(update[0]!.key.fromMe).toBe(true)
+		expect(update[0]!.key.editActorFromMe).toBe(false)
+		expect(update[0]!.key.editActorJid).toBe(editorUser)
+		expect(update[0]!.update.message?.editedMessage?.message?.conversation).toBe(editText)
+	})
+
 })
