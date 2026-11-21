@@ -327,7 +327,7 @@ export const processMessage = async (
 	// Resolve the original message so its messageSecret can authenticate and decrypt the edit.
 	if (isEncryptedMessageEdit(content)) {
 		const encryptedEdit = content.secretEncryptedMessage
-		const target = encryptedEdit.targetMessageKey
+		const target = encryptedEdit.targetMessageKey as WAMessageKey
 		if (!target?.id) {
 			logger?.warn({ msgId: message.key.id }, 'received encrypted MESSAGE_EDIT without a target message ID')
 			return
