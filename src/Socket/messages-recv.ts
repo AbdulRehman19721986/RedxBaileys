@@ -1943,15 +1943,27 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 		}
 	}
 
-	// WhatsApp can deliver status updates as top-level <status> stanzas.
-	// They are transport notifications and must be ACKed; message content
-	// continues to be handled by the regular status@broadcast message path.
+	// WhatsApp can deliver actual status messages as top-level <status> stanzas.
+	// When an encrypted payload is present, use the exact same Signal decrypt,
+	// message decode, receipt and upsert pipeline as an ordinary <message>.
+	// This restores contacts' status@broadcast events for AutoStatus and also
+	// exposes encrypted group-status messages. Transport-only stanzas still
+	// receive a plain ACK so they do not remain pending on the server.
 	const handleStatus = async (node: BinaryNode) => {
 		try {
+			if (getBinaryNodeChild(node, 'enc')) {
+				logger.debug(
+					{ from: node.attrs.from, id: node.attrs.id, type: node.attrs.type },
+					'forwarding encrypted status stanza through message decrypt pipeline'
+				)
+				await handleMessage(node)
+				return
+			}
+
 			await sendMessageAck(node)
 		} catch (error: unknown) {
-			const ackError = error instanceof Error ? error : new Error(String(error))
-			onUnexpectedError(ackError, 'acking status stanza')
+			const statusError = error instanceof Error ? error : new Error(String(error))
+			onUnexpectedError(statusError, 'handling status stanza')
 		}
 	}
 
