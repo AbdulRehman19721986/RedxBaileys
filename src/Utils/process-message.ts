@@ -339,8 +339,14 @@ export const processMessage = async (
 				...target,
 				remoteJid: target.remoteJid || message.key.remoteJid,
 				id: target.id,
-				fromMe: target.fromMe ?? message.key.fromMe,
-				participant: target.participant || message.key.participant
+				// Do NOT inherit author fields from the edit envelope. Those fields
+				// identify the EDITOR, not the original target message. The bot's
+				// getMessage callback may hydrate these from its cached original key.
+				fromMe: target.fromMe,
+				participant: target.participant,
+				participantAlt: target.participantAlt,
+				remoteJidAlt: target.remoteJidAlt,
+				addressingMode: target.addressingMode
 			}
 			const originalContent = await getMessage(targetKey)
 			const normalizedOriginal = normalizeMessageContent(originalContent)
@@ -354,8 +360,13 @@ export const processMessage = async (
 				return
 			}
 
-			const originalSenderJid = getKeyAuthor(targetKey, meId)
-			const editorJid = getKeyAuthor(message.key, meId)
+			// In group chats participant/participantAlt identify the person;
+			// remoteJidAlt can be a chat alias and must not outrank that identity.
+			const editKeyAuthor = (key: WAMessageKey) => key.fromMe
+				? meId
+				: (key.participantAlt || key.participant || key.remoteJidAlt || key.remoteJid || '')
+			const originalSenderJid = editKeyAuthor(targetKey)
+			const editorJid = editKeyAuthor(message.key)
 			const decodedEdit = decryptMessageEdit(encryptedEdit, {
 				originalSenderJid,
 				originalMsgId: target.id,
