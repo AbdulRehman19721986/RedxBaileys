@@ -213,6 +213,20 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 		}
 
 		logger.debug({ attrs: node.attrs, messageIds }, 'sending receipt for messages')
+
+		// REDX GHOST HOOK: read/delivered receipt ghost mode mein block karo
+		// type=undefined → delivery ack, type='read' → blue tick — dono block
+		if (global.__redxGhostActiveFlag === true) {
+			const isDelivery = !node.attrs.type || node.attrs.type === 'sender'
+			const isRead     = node.attrs.type === 'read' || node.attrs.type === 'read-self'
+			if (isDelivery || isRead) {
+				// 'inactive' type set karo — WaEnhancer ki tarah exactly
+				node.attrs.type = 'inactive'
+				delete node.attrs.t
+				logger.trace({ to: node.attrs.to }, '[GHOST] receipt neutered → inactive (single tick)')
+			}
+		}
+
 		await sendNode(node)
 	}
 

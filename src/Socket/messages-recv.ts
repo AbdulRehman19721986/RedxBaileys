@@ -161,6 +161,22 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 
 	let sendActiveReceipts = false
 
+	// ── REDX GHOST HOOK ──────────────────────────────────────────────────────
+	// Ghost mode active hone par sendActiveReceipts ko true hone se rokta hai.
+	// isOnline=true aata hai tab bhi receipts block rehte hain.
+	// Source: plugins/ghostmode.js ke saath co-ordinate karta hai.
+	function isGhostModeActive(): boolean {
+		try {
+			// eslint-disable-next-line @typescript-eslint/no-var-requires
+			const ghostPlugin = require('../../../plugins/ghostmode')
+			// sock yahan available nahi — global flag use karo
+			return global.__redxGhostActiveFlag === true
+		} catch {
+			return global.__redxGhostActiveFlag === true
+		}
+	}
+	// ─────────────────────────────────────────────────────────────────────────
+
 	const fetchMessageHistory = async (
 		count: number,
 		oldestMsgKey: WAMessageKey,
@@ -2093,8 +2109,15 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 
 	ev.on('connection.update', ({ isOnline, connection }) => {
 		if (typeof isOnline !== 'undefined') {
-			sendActiveReceipts = isOnline
-			logger.trace(`sendActiveReceipts set to "${sendActiveReceipts}"`)
+			// REDX GHOST HOOK: ghost mode active hai toh sendActiveReceipts
+			// kabhi true mat hone do — receipt node 'inactive' rahega = single tick
+			if (isOnline && isGhostModeActive()) {
+				sendActiveReceipts = false
+				logger.trace('sendActiveReceipts FORCED false — ghost mode active')
+			} else {
+				sendActiveReceipts = isOnline
+				logger.trace(`sendActiveReceipts set to "${sendActiveReceipts}"`)
+			}
 		}
 
 		// Flush pending tctoken index save on disconnect to avoid writing after close
