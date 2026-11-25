@@ -43,6 +43,9 @@ jobs:
             ${{ runner.os }}-yarn-
 
       - name: Install Dependencies
+        run: yarn install --mode=update-lockfile
+
+      - name: Install dependencies (immutable)
         run: yarn install --immutable
 
       - name: Release
